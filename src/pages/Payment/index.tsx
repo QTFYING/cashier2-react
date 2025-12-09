@@ -1,25 +1,20 @@
 import { AlipayCircleOutlined, WechatOutlined } from '@ant-design/icons';
 import { Button, Form, Radio } from 'antd';
-import React, { useState } from 'react';
+import React from 'react';
 import type { CreateOrderParams } from '../../api/payment';
 import { useCashier } from '../../hooks';
 
 const Payment: React.FC = () => {
   const [form] = Form.useForm();
 
-  // 一行代码拿到 SDK 实例
-  const cashier = useCashier();
-  const [loading, setLoading] = useState(false);
+  const { pay, loading, status } = useCashier();
 
   const onFinish = async (values: CreateOrderParams) => {
-    setLoading(true);
     try {
-      const res = await cashier.execute(values.channel, { orderId: '123', amount: 100 });
+      const res = await pay(values.channel, { orderId: '123', amount: 100 });
       console.log('支付结果', res);
     } catch (err) {
       console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -36,6 +31,10 @@ const Payment: React.FC = () => {
             微信
           </Radio.Button>
         </Radio.Group>
+      </Form.Item>
+
+      <Form.Item name="channel" label="支付状态">
+        <div>{status}</div>
       </Form.Item>
 
       <Form.Item>
