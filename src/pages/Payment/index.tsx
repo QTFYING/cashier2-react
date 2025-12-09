@@ -11,22 +11,16 @@ const Payment: React.FC = () => {
   const cashier = useCashier();
   const [loading, setLoading] = useState(false);
 
-  const handlePay = async () => {
+  const onFinish = async (values: CreateOrderParams) => {
     setLoading(true);
     try {
-      // 直接调用 Core SDK 的能力
-      const res = await cashier.execute('wechat', { orderId: '123', amount: 100 });
+      const res = await cashier.execute(values.channel, { orderId: '123', amount: 100 });
       console.log('支付结果', res);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  };
-
-  const onFinish = (values: CreateOrderParams) => {
-    console.log('x-1', values);
-    void handlePay();
   };
 
   return (
@@ -45,7 +39,7 @@ const Payment: React.FC = () => {
       </Form.Item>
 
       <Form.Item>
-        <Button type="primary" htmlType="submit" size="large">
+        <Button type="primary" htmlType="submit" size="large" loading={loading}>
           去支付
         </Button>
       </Form.Item>

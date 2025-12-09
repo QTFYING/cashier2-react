@@ -1,10 +1,19 @@
 // src/strategies/AlipayStrategy.ts
+import { AlipayAdapter } from '../adapters';
 import { PayError } from '../core/payment-error';
 import { PayErrorCode } from '../types/errors';
 import type { PayParams, PayResult } from '../types/protocol';
 import { BaseStrategy } from './base-strategy';
 
-export class AlipayStrategy extends BaseStrategy {
+// 定义微信策略需要的配置类型
+interface AlipayConfig {
+  appId: string;
+  privateKey: string;
+  notifyUrl?: string;
+}
+
+export class AlipayStrategy extends BaseStrategy<AlipayConfig> {
+   private adapter = new AlipayAdapter();
   readonly name = 'alipay';
   private startTime = Date.now();
 
@@ -27,17 +36,20 @@ export class AlipayStrategy extends BaseStrategy {
     return this.success(`MOCK_11111`, { source: 'mock', elapsed });
   }
 
-  async pay(_params: PayParams): Promise<PayResult> {
+  async pay(params: PayParams): Promise<PayResult> {
     // ... 前置逻辑 ...
 
     try {
       // 假设这是调用支付宝后的原始返回
-      // const rawRes = await this.invokeAlipay(params);
+       const payload = this.adapter.transform(params);
+       console.log('xxx-1', payload)
+      // const rawRes = await this.invokeAlipay(payload);
 
       const rawRes = await new Promise((resolve) => setTimeout(resolve, 500));
 
       // --- 关键点：错误码映射层 ---
-      return this.normalizeResult(rawRes);
+      // return this.normalizeResult(rawRes);
+       return this.success(`MOCK_ALIPAY_ORDER_ID_${params.orderId}`, { source: 'mock' });
     } catch (error: any) {
       // 如果是网络层抛出的 JS Error
       throw new PayError(PayErrorCode.UNKNOWN, error.message || 'Alipay invoke failed', this.name);

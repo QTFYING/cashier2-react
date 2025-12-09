@@ -1,6 +1,7 @@
 // src/hooks/react/CashierProvider.tsx
 import React, { useEffect, useMemo } from 'react';
-import { PaymentContext, type SDKConfig } from '../cashier2';
+import { AlipayStrategy, PaymentContext, WechatStrategy, type SDKConfig } from '../cashier2';
+import { MockStrategy } from '../cashier2/strategies';
 import { CashierContext } from './cashier-context';
 
 // 2. 定义 Provider 的 Props
@@ -30,6 +31,11 @@ export const CashierProvider: React.FC<CashierProviderProps> = ({ config, client
 
   // 可选：组件卸载时清理资源 (如停止轮询)
   useEffect(() => {
+    cashierInstance
+      .register(new WechatStrategy({ appId: 'wx888888', mchId: '123456' }))
+      .register(new AlipayStrategy({ appId: '2021000000', privateKey: '...' }))
+      .register(new MockStrategy());
+
     return () => {
       // 如果 SDK 有 destroy 方法，可以在这里调用
       // cashierInstance.destroy();

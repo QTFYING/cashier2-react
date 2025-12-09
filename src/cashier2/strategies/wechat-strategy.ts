@@ -1,3 +1,4 @@
+import { WechatAdapter } from '../adapters';
 import { InvokerFactory } from '../core/invoker-factory';
 import type { SDKConfig } from '../core/payment-context';
 import type { HttpClient, PayParams, PayResult } from '../types';
@@ -12,6 +13,7 @@ interface WechatConfig {
 }
 
 export class WechatStrategy extends BaseStrategy<WechatConfig> {
+  private adapter = new WechatAdapter();
   public readonly name = 'wechat';
   private startTime = Date.now();
 
@@ -94,7 +96,7 @@ export class WechatStrategy extends BaseStrategy<WechatConfig> {
 
       /** ---------------------- 去支付 ---------------------- **/
 
-      const payload = params; // 实际上的payload是那http去请求prepare的结果
+      const payload = this.adapter.transform(params);
 
       // 如果有 Invoker (UniApp)，就走 Invoker
       if (invokerType === 'uniapp') {
@@ -116,7 +118,7 @@ export class WechatStrategy extends BaseStrategy<WechatConfig> {
         return { status: 'pending', message: 'User is paying1' };
       }
 
-      return this.success(`MOCK_${params.orderId}`, { source: 'mock', elapsed });
+      return this.success(`MOCK_WECHAT_ORDER_ID_${params.orderId}`, { source: 'mock', elapsed });
     } catch (error: any) {
       return {
         status: 'fail',
