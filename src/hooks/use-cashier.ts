@@ -46,47 +46,35 @@ export function useCashier(options: UseCashierOptions = {}) {
   const optionsRef = useRef(options);
   optionsRef.current = options;
 
-  // 倒计时 Timer
-  const timerRef = useRef<any>(null);
-
   // --- 1. 事件监听 (EventBus 桥接) ---
   useEffect(() => {
     if (!cashier) return;
 
-    // 定义监听器
-    const handleSuccess = (res: PayResult) => {
+    // 绑定
+    cashier.on('success', (res: PayResult) => {
       setState((s) => ({ ...s, loading: false, status: 'success', result: res }));
       optionsRef.current.onSuccess?.(res);
-    };
+    });
 
-    const handleFail = (err: any) => {
+    cashier.on('fail', (err: any) => {
       setState((s) => ({ ...s, loading: false, status: 'fail', error: err }));
       optionsRef.current.onError?.(err);
-    };
+    });
 
-    const handleStatusChange = (payload: { status: string; result?: any }) => {
+    cashier.on('statusChange', (payload: { status: string; result?: any }) => {
       // 这里的 status 可能是 'pending' (轮询中)
       optionsRef.current.onStatusChange?.(payload.status, payload.result);
       if (payload.status === 'pending') {
         setState((s) => ({ ...s, status: 'processing' }));
       }
-    };
-
-    // 绑定
-    cashier.on('success', handleSuccess);
-    cashier.on('fail', handleFail);
-    cashier.on('statusChange', handleStatusChange);
+    });
 
     // 自动注册页面级插件 (防重复)
     cashier.use(LoggerPlugin).use(LoadingPlugin).use(AuthPlugin);
 
     // 清理
     return () => {
-      cashier.off('success', handleSuccess);
-      cashier.off('fail', handleFail);
-      cashier.off('statusChange', handleStatusChange);
-      // 注意：一般不卸载插件，因为 SDK 是单例的，卸载可能影响其他页面
-      clearInterval(timerRef.current);
+      cashier.clear();
     };
   }, [cashier]);
 
@@ -94,7 +82,6 @@ export function useCashier(options: UseCashierOptions = {}) {
   const pay = useCallback(
     async (strategyName: string, params: PayParams) => {
       setState((s) => ({ ...s, loading: true, error: null, status: 'processing' }));
-      alert(1);
 
       try {
         const res = await cashier.execute(strategyName, params);
@@ -114,11 +101,5 @@ export function useCashier(options: UseCashierOptions = {}) {
   // --- 4. 营销计算 (纯逻辑) ---
   const calculatePrice = useCallback(() => {}, []);
 
-  return {
-    ...state,
-    pay,
-    refund,
-    cashier,
-    calculatePrice,
-  };
+  return { ...state, pay, refund, cashier, calculatePrice };
 }
