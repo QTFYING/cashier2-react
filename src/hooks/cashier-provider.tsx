@@ -13,7 +13,6 @@ interface CashierProviderProps {
   children: React.ReactNode;
 }
 
-
 /**
  * 核心组件：CashierProvider
  * 应该包裹在你的 App 最外层
@@ -23,9 +22,9 @@ export const CashierProvider: React.FC<CashierProviderProps> = ({ config, client
   // useMemo 确保只有在 config/client 变化时才重新创建，防止重复 new
   const cashierInstance = useMemo(() => {
     // 优先使用用户传入的现成实例
-    if (client)  return client;
+    if (client) return client;
     // 否则根据配置自动创建一个新实例
-    if (config)  return new PaymentContext(config);
+    if (config) return new PaymentContext(config);
     throw new Error('[CashierProvider] You must provide either "config" or "client" prop.');
   }, [config, client]);
 
@@ -39,9 +38,5 @@ export const CashierProvider: React.FC<CashierProviderProps> = ({ config, client
     };
   }, [cashierInstance]);
 
-  return (
-    <CashierContext.Provider value={{ cashier: cashierInstance }}>
-      {children}
-    </CashierContext.Provider>
-  );
+  return <CashierContext.Provider value={{ cashier: cashierInstance }}>{children}</CashierContext.Provider>;
 };

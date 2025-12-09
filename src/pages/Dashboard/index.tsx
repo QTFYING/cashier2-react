@@ -9,29 +9,17 @@ const Dashboard: React.FC = () => {
       <Row gutter={16}>
         <Col span={8}>
           <Card>
-            <Statistic
-              title="Total Transactions"
-              value={112893}
-              prefix={<DollarCircleOutlined />}
-            />
+            <Statistic title="Total Transactions" value={112893} prefix={<DollarCircleOutlined />} />
           </Card>
         </Col>
         <Col span={8}>
           <Card>
-            <Statistic
-              title="Daily Orders"
-              value={1234}
-              prefix={<ShoppingCartOutlined />}
-            />
+            <Statistic title="Daily Orders" value={1234} prefix={<ShoppingCartOutlined />} />
           </Card>
         </Col>
         <Col span={8}>
           <Card>
-            <Statistic
-              title="Active Users"
-              value={93}
-              prefix={<UserOutlined />}
-            />
+            <Statistic title="Active Users" value={93} prefix={<UserOutlined />} />
           </Card>
         </Col>
       </Row>

@@ -19,28 +19,22 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f0f2f5' }}>
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        background: '#f0f2f5',
+      }}
+    >
       <Card title="Payment Platform Login" style={{ width: 300 }}>
-        <Form
-          name="normal_login"
-          initialValues={{ remember: true }}
-          onFinish={onFinish}
-        >
-          <Form.Item
-            name="username"
-            rules={[{ required: true, message: 'Please input your Username!' }]}
-          >
+        <Form name="normal_login" initialValues={{ remember: true }} onFinish={onFinish}>
+          <Form.Item name="username" rules={[{ required: true, message: 'Please input your Username!' }]}>
             <Input prefix={<UserOutlined />} placeholder="Username (admin)" />
           </Form.Item>
-          <Form.Item
-            name="password"
-            rules={[{ required: true, message: 'Please input your Password!' }]}
-          >
-            <Input
-              prefix={<LockOutlined />}
-              type="password"
-              placeholder="Password (123456)"
-            />
+          <Form.Item name="password" rules={[{ required: true, message: 'Please input your Password!' }]}>
+            <Input prefix={<LockOutlined />} type="password" placeholder="Password (123456)" />
           </Form.Item>
 
           <Form.Item>

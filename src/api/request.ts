@@ -23,7 +23,7 @@ service.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response interceptor
@@ -43,7 +43,7 @@ service.interceptors.response.use(
     const msg = error.response?.data?.message || error.message || 'Request Failed';
     message.error(msg);
     return Promise.reject(error);
-  }
+  },
 );
 
 // Generic request wrapper to ensure type safety

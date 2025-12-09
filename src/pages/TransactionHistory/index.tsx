@@ -64,7 +64,7 @@ const data: DataType[] = [
   {
     key: '1',
     id: 'TXN-001',
-    amount: 3200.00,
+    amount: 3200.0,
     currency: 'USD',
     status: 'Completed',
     date: '2023-10-01',
@@ -72,7 +72,7 @@ const data: DataType[] = [
   {
     key: '2',
     id: 'TXN-002',
-    amount: 42.50,
+    amount: 42.5,
     currency: 'EUR',
     status: 'Pending',
     date: '2023-10-02',
@@ -80,7 +80,7 @@ const data: DataType[] = [
   {
     key: '3',
     id: 'TXN-003',
-    amount: 100.00,
+    amount: 100.0,
     currency: 'USD',
     status: 'Failed',
     date: '2023-10-03',

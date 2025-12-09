@@ -1,20 +1,15 @@
-import { ConfigProvider } from 'antd';
 import React from 'react';
 import { RouterProvider } from 'react-router-dom';
+import service from './api/request';
 import './App.css';
+import { CashierProvider } from './hooks/cashier-provider';
 import router from './router';
 
 const App: React.FC = () => {
   return (
-    <ConfigProvider
-      theme={{
-        token: {
-          colorPrimary: '#1677ff',
-        },
-      }}
-    >
+    <CashierProvider config={{ debug: true, http: service }}>
       <RouterProvider router={router} />
-    </ConfigProvider>
+    </CashierProvider>
   );
 };
 
