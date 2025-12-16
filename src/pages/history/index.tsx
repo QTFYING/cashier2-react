@@ -52,7 +52,7 @@ const columns: ColumnsType<DataType> = [
   {
     title: 'Action',
     key: 'action',
-    render: (_, record) => (
+    render: (_, _record) => (
       <Space size="middle">
         <a>View Details</a>
       </Space>
