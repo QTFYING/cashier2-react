@@ -1,6 +1,7 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import type { PayError, PaymentContext, PaymentPlugin, PayParams, PayResult } from '../cashier2';
 import { CashierContext } from './cashier-context';
+import { PaymentStatusEnum } from './enums';
 import { AuthPlugin, LoadingPlugin, LoggerPlugin } from './plugin';
 
 // --- 入参配置 ---
@@ -31,7 +32,7 @@ export interface CashierActions {
 
 export interface CashierState {
   loading: boolean;
-  status: 'idle' | 'created' | 'processing' | 'success' | 'fail' | 'refunded';
+  status: keyof typeof PaymentStatusEnum;
   result: PayResult | null;
   error: PayError | null;
 }
@@ -83,8 +84,22 @@ export function useCashier(options: UseCashierOptions = {}) {
     async (strategyName: string, params: PayParams) => {
       setState((s) => ({ ...s, loading: true, error: null, status: 'processing' }));
 
+      /* {
+        "appid": "wxd678efh567hg6787",
+        "mch_id": "1230000109",
+        "nonce_str": "5K8264ILTKCH16CQ2502SI8ZNMTM67VS",
+        "sign": "C380BEC2BFD727A4B6845133519F3AD6",
+        "body": "商品描述",
+        "out_trade_no": "20150806125346",
+        "total_fee": 100,       // 单位：分（100 = 1元）
+        "spbill_create_ip": "123.12.12.123",
+        "notify_url": "https://yourdomain.com/wechatpay/notify",
+        "trade_type": "JSAPI",
+        "openid": "oUpF8uMuAJO_M2pxb1Q9zNjWeS6o"  // 仅 JSAPI 支付需要，其他类型（如 Native）不用填
+      } */
+
       try {
-        const res = await cashier.execute(strategyName, params);
+        const res = await cashier.execute(strategyName, { ...params });
         return res;
       } catch (err: any) {
         throw new Error(err.message || '支付失败');
@@ -101,5 +116,5 @@ export function useCashier(options: UseCashierOptions = {}) {
   // --- 4. 营销计算 (纯逻辑) ---
   const calculatePrice = useCallback(() => {}, []);
 
-  return { ...state, pay, refund, cashier, calculatePrice };
+  return { ...state, pay, refund, cashier, calculatePrice, statusText: PaymentStatusEnum[state.status] };
 }

@@ -17,19 +17,19 @@ const BasicLayout: React.FC = () => {
     {
       key: '/dashboard',
       icon: <DashboardOutlined />,
-      label: 'Dashboard',
+      label: '仪表盘',
       onClick: () => navigate('/dashboard'),
     },
     {
       key: '/payment',
       icon: <CreditCardOutlined />,
-      label: 'Payment',
+      label: '收银台',
       onClick: () => navigate('/payment'),
     },
     {
       key: '/history',
       icon: <HistoryOutlined />,
-      label: 'History',
+      label: '日志',
       onClick: () => navigate('/history'),
     },
   ];
@@ -39,17 +39,12 @@ const BasicLayout: React.FC = () => {
   return (
     <Layout className="min-h-screen">
       <Sider trigger={null} collapsible collapsed={collapsed}>
-        <div className="demo-logo-vertical h-8 m-4 bg-white/20 rounded" />
+        <div className="h-8 m-4 bg-white/20 rounded text-white justify-center flex items-center">LOGO 后台管理平台</div>
         <Menu theme="dark" mode="inline" selectedKeys={[selectedKey]} items={menuItems} />
       </Sider>
       <Layout>
         <Header className="p-0 flex items-center" style={{ background: colorBgContainer }}>
-          <Button
-            type="text"
-            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            onClick={() => setCollapsed(!collapsed)}
-            className="text-[16px] w-16 h-16"
-          />
+          <Button type="text" icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />} onClick={() => setCollapsed(!collapsed)} className="text-[16px] w-16 h-16" />
           <h2 className="m-0">收银台</h2>
         </Header>
         <Content className="my-6 mx-4 p-6 min-h-[280px]" style={{ background: colorBgContainer, borderRadius: borderRadiusLG }}>

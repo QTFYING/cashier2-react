@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
-import BasicLayout from '../layouts/BasicLayout';
+import BasicLayout from '../layouts/basic';
 import Dashboard from '../pages/dashboard';
 import TransactionHistory from '../pages/history';
 import Payment from '../pages/pay';

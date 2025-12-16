@@ -74,7 +74,7 @@ export class WechatStrategy extends BaseStrategy<WechatConfig> {
     }
   }
 
-  async pay(params: PayParams, _http: HttpClient, invokerType?: SDKConfig['invokerType']): Promise<PayResult> {
+  async pay(params: PayParams, http: HttpClient, invokerType?: SDKConfig['invokerType']): Promise<PayResult> {
     // 1. 调用父类通用校验
     this.validateParams(params);
 
@@ -91,7 +91,10 @@ export class WechatStrategy extends BaseStrategy<WechatConfig> {
       console.log(`[WechatStrategy] Signing with AppID: ${this.config.appId}...`);
 
       // 模拟：向后端请求支付参数
-      // const orderInfo = await _http.post('/api/pay/wechat', params);
+      const orderInfo = await http.post('/payment/wechat', params);
+
+
+      console.log('xxx-1', orderInfo)
       // const payload = params; // 暂时透传
 
       /** ---------------------- 去支付 ---------------------- **/

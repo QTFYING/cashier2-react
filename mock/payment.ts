@@ -1,5 +1,5 @@
-import Mock from 'mockjs';
-import { MockMethod } from 'vite-plugin-mock';
+import * as Mock from 'mockjs';
+import type { MockMethod } from 'vite-plugin-mock';
 
 const Random = Mock.Random;
 
@@ -7,7 +7,7 @@ export default [
   {
     url: '/api/payment/unifiedOrder',
     method: 'post',
-    response: ({ body }) => {
+    response: ({ body }: { body: any }) => {
       const { channel, amount, currency } = body;
       const orderId = Random.id();
 
@@ -33,17 +33,21 @@ export default [
     },
   },
   {
-    url: '/api/payment/pay',
+    url: '/api/payment/wechat',
     method: 'post',
-    response: ({ body }) => {
-      // Simulate payment processing
+    response: ({ body }: { body: any }) => {
       return {
         code: 200,
         message: 'Payment successful',
         data: {
-          orderId: body.orderId,
-          status: 'COMPLETED',
-          transactionId: Random.guid(),
+          return_msg: 'OK',
+          appid: 'wxd678efh567hg6787',
+          mch_id: '1230000109',
+          nonce_str: '5K8264ILTKCH16CQ2502SI8ZNMTM67VS',
+          sign: 'B552ED6B279343CB493C5DD0D78AB241',
+          return_code: 'SUCCESS',
+          prepay_id: body.orderId,
+          trade_type: 'JSAPI',
           timestamp: new Date().toISOString(),
         },
       };
