@@ -1,7 +1,6 @@
 import React from 'react';
 import { RouterProvider } from 'react-router-dom';
 import service from './api/request';
-import './App.css';
 import { CashierProvider } from './hooks/cashier-provider';
 import router from './router';
 

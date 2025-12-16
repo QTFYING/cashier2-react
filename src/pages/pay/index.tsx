@@ -23,11 +23,11 @@ const Payment: React.FC = () => {
       <Form.Item name="channel" label="支付方式" rules={[{ required: true }]}>
         <Radio.Group>
           <Radio.Button value="alipay">
-            <AlipayCircleOutlined style={{ color: '#1677ff', marginRight: 8 }} />
+            <AlipayCircleOutlined className="text-[#1677ff] mr-2" />
             支付宝
           </Radio.Button>
           <Radio.Button value="wechat">
-            <WechatOutlined style={{ color: '#52c41a', marginRight: 8 }} />
+            <WechatOutlined className="text-[#52c41a] mr-2" />
             微信
           </Radio.Button>
         </Radio.Group>

@@ -1,15 +1,10 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import BasicLayout from '../layouts/BasicLayout';
-import Dashboard from '../pages/Dashboard';
-import Login from '../pages/Login';
-import Payment from '../pages/Payment';
-import TransactionHistory from '../pages/TransactionHistory';
+import Dashboard from '../pages/dashboard';
+import TransactionHistory from '../pages/history';
+import Payment from '../pages/pay';
 
 const router = createBrowserRouter([
-  {
-    path: '/login',
-    element: <Login />,
-  },
   {
     path: '/',
     element: <BasicLayout />,

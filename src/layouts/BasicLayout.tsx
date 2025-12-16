@@ -1,4 +1,4 @@
-import { CreditCardOutlined, DashboardOutlined, HistoryOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
+import { CreditCardOutlined, DashboardOutlined, HistoryOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import { Button, Layout, Menu, theme } from 'antd';
 import React, { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -7,9 +7,8 @@ const { Header, Sider, Content } = Layout;
 
 const BasicLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
-  const {
-    token: { colorBgContainer, borderRadiusLG },
-  } = theme.useToken();
+
+  const { colorBgContainer, borderRadiusLG } = theme.useToken().token;
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -33,64 +32,27 @@ const BasicLayout: React.FC = () => {
       label: 'History',
       onClick: () => navigate('/history'),
     },
-    {
-      key: 'logout',
-      icon: <LogoutOutlined />,
-      label: 'Logout',
-      onClick: () => {
-        // Clear token logic
-        navigate('/login');
-      },
-    },
   ];
 
-  // Determine selected key based on current path
   const selectedKey = menuItems.find((item) => location.pathname.startsWith(item.key))?.key || '/dashboard';
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout className="min-h-screen">
       <Sider trigger={null} collapsible collapsed={collapsed}>
-        <div
-          className="demo-logo-vertical"
-          style={{
-            height: 32,
-            margin: 16,
-            background: 'rgba(255, 255, 255, 0.2)',
-            borderRadius: 6,
-          }}
-        />
+        <div className="demo-logo-vertical h-8 m-4 bg-white/20 rounded" />
         <Menu theme="dark" mode="inline" selectedKeys={[selectedKey]} items={menuItems} />
       </Sider>
       <Layout>
-        <Header
-          style={{
-            padding: 0,
-            background: colorBgContainer,
-            display: 'flex',
-            alignItems: 'center',
-          }}
-        >
+        <Header className="p-0 flex items-center" style={{ background: colorBgContainer }}>
           <Button
             type="text"
             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
             onClick={() => setCollapsed(!collapsed)}
-            style={{
-              fontSize: '16px',
-              width: 64,
-              height: 64,
-            }}
+            className="text-[16px] w-16 h-16"
           />
-          <h2 style={{ margin: 0 }}>收银台</h2>
+          <h2 className="m-0">收银台</h2>
         </Header>
-        <Content
-          style={{
-            margin: '24px 16px',
-            padding: 24,
-            minHeight: 280,
-            background: colorBgContainer,
-            borderRadius: borderRadiusLG,
-          }}
-        >
+        <Content className="my-6 mx-4 p-6 min-h-[280px]" style={{ background: colorBgContainer, borderRadius: borderRadiusLG }}>
           <Outlet />
         </Content>
       </Layout>

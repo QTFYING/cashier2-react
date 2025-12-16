@@ -5,7 +5,7 @@ import React from 'react';
 const Dashboard: React.FC = () => {
   return (
     <div>
-      <h2 style={{ marginBottom: 24 }}>Dashboard</h2>
+      <h2 className="mb-6">Dashboard</h2>
       <Row gutter={16}>
         <Col span={8}>
           <Card>
@@ -24,7 +24,7 @@ const Dashboard: React.FC = () => {
         </Col>
       </Row>
 
-      <Card title="Recent Activity" style={{ marginTop: 24 }}>
+      <Card title="Recent Activity" className="mt-6">
         <p>System operational.</p>
         <p>Payment gateway status: Online</p>
       </Card>

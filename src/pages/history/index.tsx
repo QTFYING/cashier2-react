@@ -90,7 +90,7 @@ const data: DataType[] = [
 const TransactionHistory: React.FC = () => {
   return (
     <div>
-      <h2 style={{ marginBottom: 24 }}>Transaction History</h2>
+      <h2 className="mb-6">Transaction History</h2>
       <Table columns={columns} dataSource={data} />
     </div>
   );
