@@ -6,7 +6,7 @@ import router from './router';
 
 const App: React.FC = () => {
   return (
-    <CashierProvider config={{ debug: true, http: service }}>
+    <CashierProvider config={{ debug: true, http: service, invokerType: 'web' }}>
       <RouterProvider router={router} />
     </CashierProvider>
   );

@@ -35,20 +35,18 @@ export default [
   {
     url: '/api/payment/wechat',
     method: 'post',
-    response: ({ body }: { body: any }) => {
+    response: () => {
       return {
         code: 200,
         message: 'Payment successful',
         data: {
-          return_msg: 'OK',
-          appid: 'wxd678efh567hg6787',
-          mch_id: '1230000109',
-          nonce_str: '5K8264ILTKCH16CQ2502SI8ZNMTM67VS',
-          sign: 'B552ED6B279343CB493C5DD0D78AB241',
-          return_code: 'SUCCESS',
-          prepay_id: body.orderId,
-          trade_type: 'JSAPI',
+          // 这 5 个参数是 uni.requestPayment 或 wx.chooseWXPay 直接需要的
           timestamp: new Date().toISOString(),
+          nonceStr: '5K8264ILTKCH16CQ2502SI8ZNMTM67VS',
+          package: `prepay_id=prepay_id`,
+          signType: 'MD5',
+          paySign: 'B552ED6B279343CB493C5DD0D78AB241', // 服务端返回签名
+          appid: 'wxd678efh567hg6787',
         },
       };
     },

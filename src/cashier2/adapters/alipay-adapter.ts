@@ -4,7 +4,7 @@
    字段名：通常叫 subject (订单标题), out_trade_no (订单号), total_amount (金额), product_code。
    透传：通常放在 passback_params (需要 UrlEncode)。
 */
-import { PayParams } from '../types/protocol';
+import { PayParams, PayResult } from '../types/protocol';
 import { PaymentAdapter } from './payment-adapter';
 
 // 定义支付宝(统一收单接口)的数据结构
@@ -19,6 +19,9 @@ export interface AlipayPayload {
 }
 
 export class AlipayAdapter implements PaymentAdapter<AlipayPayload> {
+  // 1. 校验逻辑下沉到 Adapter
+  validate(params: PayParams): void {}
+
   transform(params: PayParams): AlipayPayload {
     // 1. 金额转换：保留两位小数的字符串 (e.g., 100.00)
     const totalAmount = params.amount.toFixed(2);
@@ -46,5 +49,36 @@ export class AlipayAdapter implements PaymentAdapter<AlipayPayload> {
     }
 
     return payload;
+  }
+
+  normalize(rawResult: any): PayResult {
+    // 支付宝小程序返回的是 resultCode (String)
+    const code = rawResult?.resultCode;
+
+    // "9000" 代表支付成功
+    if (code === '9000') {
+      return {
+        status: 'success',
+        raw: rawResult,
+        message: 'Alipay Success'
+      };
+    }
+
+    // "6001" 代表用户中途取消
+    if (code === '6001') {
+      return { status: 'cancel', message: 'User cancelled', raw: rawResult };
+    }
+
+    // "8000" 代表正在处理中 (很少见，但也算一种 pending)
+    if (code === '8000') {
+      return { status: 'processing', message: 'Payment processing', raw: rawResult };
+    }
+
+    // 其他都是失败
+    return {
+      status: 'fail',
+      message: rawResult?.memo || 'Alipay Failed',
+      raw: rawResult
+    };
   }
 }

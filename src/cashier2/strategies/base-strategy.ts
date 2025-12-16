@@ -39,19 +39,6 @@ export abstract class BaseStrategy<TConfig = any> {
   abstract getPaySt(orderId: string): Promise<PayResult>;
 
   /**
-   * 钩子方法：参数预校验
-   * 子类可以覆盖此方法，或者直接使用父类的通用校验
-   */
-  validateParams(params: PayParams): void {
-    if (!params.orderId) {
-      throw new Error(`[${this.name}] Order ID is missing.`);
-    }
-    if (params.amount <= 0) {
-      throw new Error(`[${this.name}] Amount must be greater than 0.`);
-    }
-  }
-
-  /**
    * 辅助方法：生成标准化的成功返回
    */
   protected success(transactionId: string, raw?: any): PayResult {

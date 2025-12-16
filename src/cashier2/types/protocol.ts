@@ -1,7 +1,7 @@
 /**
  * 统一支付结果状态
  */
-export type PaySt = 'success' | 'fail' | 'cancel' | 'pending';
+export type PaySt = 'success' | 'fail' | 'cancel' | 'pending' | 'processing';
 
 /**
  * 定义支持的支付渠道

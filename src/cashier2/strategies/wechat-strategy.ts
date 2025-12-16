@@ -14,6 +14,7 @@ interface WechatConfig {
 
 export class WechatStrategy extends BaseStrategy<WechatConfig> {
   private adapter = new WechatAdapter();
+
   public readonly name = 'wechat';
   private startTime = Date.now();
 
@@ -75,53 +76,29 @@ export class WechatStrategy extends BaseStrategy<WechatConfig> {
   }
 
   async pay(params: PayParams, http: HttpClient, invokerType?: SDKConfig['invokerType']): Promise<PayResult> {
-    // 1. 调用父类通用校验
-    this.validateParams(params);
-
-    if (this.options.debug) {
-      console.log(`[WechatStrategy] Preparing payment for Order: ${params.orderId}`);
-    }
+    // 1. 校验 (Adapter 负责，Strategy 不关心具体字段)
+    this.adapter.validate(params);
 
     // Mock Mode
     if (this.options.mock) return this.mockPay(params);
 
     try {
-      // --- 适配层逻辑 ---
-      // 实际开发中，这里会调用后端 API 获取签名，或者调用 wx.chooseWXPay
-      console.log(`[WechatStrategy] Signing with AppID: ${this.config.appId}...`);
+      // 向后端请求支付参数，后期计划这个API也可配置
+      // 服务端做了两件事情，一是统一下单拿到prepay_id，二是返回签名后的参数
+      // 签名所需要：appId, timestamp, nonceStr, packageStr, 'MD5', API_KEY
 
-      // 模拟：向后端请求支付参数
-      const orderInfo = await http.post('/payment/wechat', params);
-
-
-      console.log('xxx-1', orderInfo)
-      // const payload = params; // 暂时透传
-
-      /** ---------------------- 去支付 ---------------------- **/
-
+      // 2. 转换 (Adapter 负责，Strategy 不关心元转分)
       const payload = this.adapter.transform(params);
 
-      // 如果有 Invoker (UniApp)，就走 Invoker
-      if (invokerType === 'uniapp') {
-        // const uniAppInvoker = new UniAppInvoker('wxpay');
-        // uniAppInvoker.invoke(payload);
-      } else {
-        const invoker = InvokerFactory.create(this.name, invokerType);
-        invoker.invoke(payload);
-      }
+      // 返回的参数，可以直接透传给Invoker（主要是5大金刚）
+      const signedData = await http.post('/payment/wechat', payload);
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // 4. 执行 (Invoker 负责)
+      const invoker = InvokerFactory.create(this.name, invokerType);
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const invokeRes =  await invoker.invoke(signedData);
 
-      //  Mock逻辑：在首次调用后的 10 秒内返回 pending，之后返回 success
-      const elapsed = Date.now() - this.startTime;
-
-      if (elapsed < 10000) {
-        return { status: 'pending', message: 'User is paying1' };
-      }
-
-      return this.success(`MOCK_WECHAT_ORDER_ID_${params.orderId}`, { source: 'mock', elapsed });
+      return this.adapter.normalize(invokeRes)
     } catch (error: any) {
       return {
         status: 'fail',

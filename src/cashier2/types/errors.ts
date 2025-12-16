@@ -19,4 +19,7 @@ export enum PayErrorCode {
 
   // 6. 兜底
   UNKNOWN = 'UNKNOWN',
+
+  PARAM_INVALID = 'PARAM_INVALID', // 参数无效
+  GATEWAY_ERROR = 'GATEWAY_ERROR', // 预下单失败
 }

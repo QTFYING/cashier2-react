@@ -4,7 +4,9 @@
    字段名：通常叫 body (商品描述), out_trade_no (订单号), total_fee (金额), spbill_create_ip (IP)。
    附加数据：通常放在 attach 字段
 */
-import { PayParams } from '../types/protocol';
+import { PayError } from '../core/payment-error';
+import { PayErrorCode } from '../types';
+import { PayParams, PayResult } from '../types/protocol';
 import { PaymentAdapter } from './payment-adapter';
 
 // 定义微信(统一下单接口)的数据结构
@@ -21,31 +23,57 @@ export interface WechatPayload {
 }
 
 export class WechatAdapter implements PaymentAdapter<WechatPayload> {
+  // 1. 校验传入参数
+  validate(params: PayParams): void {
+    if (!params.orderId) {
+      throw new PayError(PayErrorCode.PARAM_INVALID, 'Missing orderId', 'wechat');
+    }
+    // 微信 JSAPI 支付特定校验
+    if (params.extra?.trade_type === 'JSAPI' && !params.extra?.openid) {
+      throw new PayError(PayErrorCode.PARAM_INVALID, 'JSAPI payment requires openid', 'wechat');
+    }
+  }
+
+
+  /* 统一支付需要的参数
+    {
+      "appid": "wxd678efh567hg6787",
+      "mch_id": "1230000109",
+      "nonce_str": "5K8264ILTKCH16CQ2502SI8ZNMTM67VS",
+      "sign": "C380BEC2BFD727A4B6845133519F3AD6",
+      "body": "商品描述",
+      "out_trade_no": "20150806125346",
+      "total_fee": 100,       // 单位：分（100 = 1元）
+      "spbill_create_ip": "123.12.12.123",
+      "notify_url": "https://yourdomain.com/wechatpay/notify",
+      "trade_type": "JSAPI",
+      "openid": "oUpF8uMuAJO_M2pxb1Q9zNjWeS6o"  // 仅 JSAPI 支付需要，其他类型（如 Native）不用填
+    }
+  */
+
   transform(params: PayParams): WechatPayload {
-    // 1. 金额转换：元 -> 分 (注意 JS 浮点数精度问题)
-    // 建议使用 safeMath 或简单的 Math.round 修正
-    const totalFee = Math.round(params.amount * 100);
-
-    // 2. 构造标准微信参数
-    const payload: WechatPayload = {
-      // 映射描述 -> body
-      body: params.description || '商品支付',
-
-      // 映射订单号 -> out_trade_no
+    return {
+      body: (params.description || '商品支付').substring(0, 127), // 自动截断
       out_trade_no: params.orderId,
-
-      // 映射金额
-      total_fee: totalFee,
-
-      // 处理 extra 里的透传参数
-      ...params.extra
+      total_fee: Math.round(params.amount * 100), // 元转分
+      ...params.extra // 透传高级参数
     };
+  }
 
-    // 3. 特殊处理：截断过长的字符串 (微信 body 限制 128 字符)
-    if (payload.body.length > 128) {
-      payload.body = payload.body.substring(0, 125) + '...';
+  normalize(rawResult: any): PayResult {
+    // 这种松散的检查反而更健壮
+    const msg = rawResult?.errMsg || rawResult?.err_msg || '';
+    const code = rawResult?.err_code || rawResult?.resultCode || '';
+
+    // 模糊匹配
+    if (/ok|success/i.test(msg) || code === '0' || code === '9000') {
+      return { status: 'success', raw: rawResult };
     }
 
-    return payload;
+    if (/cancel|取消/i.test(msg) || code === '6001') {
+      return { status: 'cancel', raw: rawResult };
+    }
+
+    return { status: 'fail', message: msg, raw: rawResult };
   }
 }

@@ -84,22 +84,8 @@ export function useCashier(options: UseCashierOptions = {}) {
     async (strategyName: string, params: PayParams) => {
       setState((s) => ({ ...s, loading: true, error: null, status: 'processing' }));
 
-      /* {
-        "appid": "wxd678efh567hg6787",
-        "mch_id": "1230000109",
-        "nonce_str": "5K8264ILTKCH16CQ2502SI8ZNMTM67VS",
-        "sign": "C380BEC2BFD727A4B6845133519F3AD6",
-        "body": "商品描述",
-        "out_trade_no": "20150806125346",
-        "total_fee": 100,       // 单位：分（100 = 1元）
-        "spbill_create_ip": "123.12.12.123",
-        "notify_url": "https://yourdomain.com/wechatpay/notify",
-        "trade_type": "JSAPI",
-        "openid": "oUpF8uMuAJO_M2pxb1Q9zNjWeS6o"  // 仅 JSAPI 支付需要，其他类型（如 Native）不用填
-      } */
-
       try {
-        const res = await cashier.execute(strategyName, { ...params });
+        const res = await cashier.execute(strategyName, params);
         return res;
       } catch (err: any) {
         throw new Error(err.message || '支付失败');
