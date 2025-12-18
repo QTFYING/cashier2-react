@@ -1,4 +1,4 @@
-import { PayParams, PayResult } from "../types";
+import type { PayParams, PayResult } from '../types';
 
 /**
  * 支付适配器

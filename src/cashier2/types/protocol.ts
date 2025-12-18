@@ -31,6 +31,7 @@ export interface PayResult {
   transactionId?: string; // 第三方流水号 (Wechat Transaction ID / Alipay Trade No)
   message?: string; // 描述信息
   raw?: any; // 原始返回数据 (作为逃生舱，方便调试)
+  actionType?: 'qrcode' | 'url';
 }
 
 /**

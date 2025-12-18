@@ -4,8 +4,8 @@
    字段名：通常叫 subject (订单标题), out_trade_no (订单号), total_amount (金额), product_code。
    透传：通常放在 passback_params (需要 UrlEncode)。
 */
-import { PayParams, PayResult } from '../types/protocol';
-import { PaymentAdapter } from './payment-adapter';
+import type { PayParams, PayResult } from '../types';
+import type { PaymentAdapter } from './payment-adapter';
 
 // 定义支付宝(统一收单接口)的数据结构
 export interface AlipayPayload {
@@ -20,7 +20,7 @@ export interface AlipayPayload {
 
 export class AlipayAdapter implements PaymentAdapter<AlipayPayload> {
   // 1. 校验逻辑下沉到 Adapter
-  validate(params: PayParams): void {}
+  validate(_params: PayParams): void {}
 
   transform(params: PayParams): AlipayPayload {
     // 1. 金额转换：保留两位小数的字符串 (e.g., 100.00)
@@ -39,7 +39,7 @@ export class AlipayAdapter implements PaymentAdapter<AlipayPayload> {
       product_code: 'QUICK_WAP_WAY',
 
       // 混合 extra 参数
-      ...params.extra
+      ...params.extra,
     };
 
     // 3. 特殊处理：passback_params 需要是字符串
@@ -52,16 +52,12 @@ export class AlipayAdapter implements PaymentAdapter<AlipayPayload> {
   }
 
   normalize(rawResult: any): PayResult {
-    // 支付宝小程序返回的是 resultCode (String)
-    const code = rawResult?.resultCode;
+    // 支付宝有些端返回 resultCode，有些返回 resultStatus
+    const code = rawResult?.resultCode || rawResult?.resultStatus;
 
     // "9000" 代表支付成功
     if (code === '9000') {
-      return {
-        status: 'success',
-        raw: rawResult,
-        message: 'Alipay Success'
-      };
+      return { status: 'success', raw: rawResult };
     }
 
     // "6001" 代表用户中途取消
@@ -77,8 +73,8 @@ export class AlipayAdapter implements PaymentAdapter<AlipayPayload> {
     // 其他都是失败
     return {
       status: 'fail',
-      message: rawResult?.memo || 'Alipay Failed',
-      raw: rawResult
+      message: rawResult?.memo || `Alipay Error: ${code}`,
+      raw: rawResult,
     };
   }
 }

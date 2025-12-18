@@ -96,9 +96,9 @@ export class WechatStrategy extends BaseStrategy<WechatConfig> {
       // 4. 执行 (Invoker 负责)
       const invoker = InvokerFactory.create(this.name, invokerType);
 
-      const invokeRes =  await invoker.invoke(signedData);
+      const invokeRes = await invoker.invoke(signedData);
 
-      return this.adapter.normalize(invokeRes)
+      return this.adapter.normalize(invokeRes);
     } catch (error: any) {
       return {
         status: 'fail',

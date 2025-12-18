@@ -24,7 +24,7 @@ type EventCallback<K extends keyof SDKEventMap> = (payload: SDKEventMap[K]) => v
 
 export class EventBus {
   // 存储监听器：Map<事件名, Set<回调函数>>
-  private listeners: Map<keyof SDKEventMap, Set<EventCallback<any>>> = new Map();
+  private tasks: Map<keyof SDKEventMap, Set<EventCallback<any>>> = new Map();
 
   /**
    * 订阅事件
@@ -32,10 +32,10 @@ export class EventBus {
    * @param callback 回调函数 (参数自动推导)
    */
   on<K extends keyof SDKEventMap>(event: K, callback: EventCallback<K>): void {
-    if (!this.listeners.has(event)) {
-      this.listeners.set(event, new Set());
+    if (!this.tasks.has(event)) {
+      this.tasks.set(event, new Set());
     }
-    this.listeners.get(event)!.add(callback);
+    this.tasks.get(event)!.add(callback);
   }
 
   /**
@@ -53,11 +53,11 @@ export class EventBus {
    * 取消订阅
    */
   off<K extends keyof SDKEventMap>(event: K, callback: EventCallback<K>): void {
-    const callbacks = this.listeners.get(event);
+    const callbacks = this.tasks.get(event);
     if (callbacks) {
       callbacks.delete(callback);
       if (callbacks.size === 0) {
-        this.listeners.delete(event);
+        this.tasks.delete(event);
       }
     }
   }
@@ -66,7 +66,7 @@ export class EventBus {
    * 触发事件 (SDK 内部使用，通常设置为 protected，但为了测试方便可以是 public)
    */
   emit<K extends keyof SDKEventMap>(event: K, payload: SDKEventMap[K]): void {
-    const callbacks = this.listeners.get(event);
+    const callbacks = this.tasks.get(event);
     if (callbacks) {
       callbacks.forEach((fn) => {
         try {
@@ -82,6 +82,6 @@ export class EventBus {
    * 清空所有事件 (一般用于实例销毁)
    */
   clear(): void {
-    this.listeners.clear();
+    this.tasks.clear();
   }
 }
