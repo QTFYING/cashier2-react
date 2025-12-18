@@ -54,7 +54,7 @@ export class WebInvoker implements PaymentInvoker {
       }
       // Native 扫码
       if (data.code_url) {
-        return { action: 'qrcode', code: data.code_url, raw: data };
+        return { action: 'qrcode', code: data.code_url, original: data };
       }
     }
 
@@ -105,7 +105,7 @@ export class WebInvoker implements PaymentInvoker {
 
     // PC 扫码
     if (data.qrCodeUrl || data.qr_code) {
-      return { action: 'qrcode', code: data.qrCodeUrl || data.qr_code, raw: data };
+      return { action: 'qrcode', code: data.qrCodeUrl || data.qr_code, original: data };
     }
 
     throw new Error('For Alipay HTML Form, please use FormInvoker instead.');

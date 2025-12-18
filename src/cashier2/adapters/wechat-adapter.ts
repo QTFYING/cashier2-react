@@ -91,6 +91,21 @@ export class WechatAdapter implements PaymentAdapter<WechatPayload> {
    * JSAPI和小程序则统一返回标准格式
    */
   normalize(rawResult: any): PayResult {
+    // 1. 识别 Invoker 透传出来的“指令动作” (如 PC 扫码、H5 跳转)
+
+    // A: 扫码，是一个中间态，需要进入轮询
+    if (rawResult?.action === 'qrcode') {
+      const { action, code, original } = rawResult;
+      return { action, code, status: 'pending', raw: original, message: '请扫码...' };
+    }
+
+    // B: 跳转，跳转后状态未知，需进入轮询或等待回调
+    if (rawResult?.action === 'url_jump') {
+      const { action, url, original } = rawResult;
+      return { action, url, status: 'pending', raw: original, message: '跳转中...' };
+    }
+
+    // C: JSAPI & Bridge
     const msg = rawResult?.errMsg || rawResult?.err_msg || '';
 
     // requestPayment:ok -> 小程序/UniApp
@@ -99,11 +114,11 @@ export class WechatAdapter implements PaymentAdapter<WechatPayload> {
     // get_brand_wcpay_request:ok -> 最新版本微信
 
     // 1. 支付成功
-    if (['requestPayment:fail', 'chooseWXPay:fail', 'getBrandWCPayRequest:fail', 'get_brand_wcpay_request:fail'].includes(msg)) {
-      return { status: 'fail', raw: rawResult };
+    if (['requestPayment:ok', 'chooseWXPay:ok', 'getBrandWCPayRequest:ok', 'get_brand_wcpay_request:ok'].includes(msg)) {
+      return { status: 'success', raw: rawResult };
     }
 
-    // 2. 匹配取消
+    // 2. 取消支付
     if (msg.indexOf('cancel') > -1 || msg.indexOf('取消') > -1) {
       return { status: 'cancel', message: 'User cancelled', raw: rawResult };
     }
@@ -111,7 +126,7 @@ export class WechatAdapter implements PaymentAdapter<WechatPayload> {
     // 3. 其他全算失败
     return {
       status: 'fail',
-      message: msg || 'Wechat Payment Failed',
+      message: msg || '微信支付失败',
       raw: rawResult,
     };
   }

@@ -1,21 +1,21 @@
 import { AlipayAdapter } from '../adapters';
 import { InvokerFactory } from '../core/invoker-factory';
 import type { SDKConfig } from '../core/payment-context';
-import { FormInvoker } from '../invokers/form-invoker';
 import type { HttpClient } from '../types';
 import type { PayParams, PayResult } from '../types/protocol';
 import { BaseStrategy } from './base-strategy';
 
-// 定义微信策略需要的配置类型
-interface AlipayConfig {
-  appId: string;
-  privateKey: string;
-  notifyUrl?: string;
-}
+type AlipayResponse =
+  | string // 可能直接返回 form HTML 字符串
+  | { orderStr: string } // App/小程序 字符串
+  | { form: string } // 某些后端喜欢包一层 JSON
+  | { qrCodeUrl: string }; // 扫码付
 
-export class AlipayStrategy extends BaseStrategy<AlipayConfig> {
+export class AlipayStrategy extends BaseStrategy<any> {
   private adapter = new AlipayAdapter();
   readonly name = 'alipay';
+
+  // mock数据，后期删除
   private startTime = Date.now();
 
   /**
@@ -25,8 +25,8 @@ export class AlipayStrategy extends BaseStrategy<AlipayConfig> {
    */
   async getPaySt(_orderId: string): Promise<PayResult> {
     // 模拟调用你的后端查单API
-    // const res = await axios.get(`/api/pay/query?id=${orderId}`);
-    // return normalize(res);
+    // const resp = await axios.get(`/api/pay/query?id=${orderId}`);
+    // return normalize(resp);
 
     // Mock逻辑：在首次调用后的 10 秒内返回 pending，之后返回 success
 
@@ -38,7 +38,7 @@ export class AlipayStrategy extends BaseStrategy<AlipayConfig> {
 
     console.log('有订单号了，支付宝支付成功啦～');
 
-    return this.success(`MOCK_11111`, { source: 'mock', elapsed });
+    return this.success(`MOCK`, { source: 'mock', elapsed });
   }
 
   /**
@@ -58,29 +58,36 @@ export class AlipayStrategy extends BaseStrategy<AlipayConfig> {
       // 如果是 APP/小程序，后端返回 { orderStr: "..." }
       // 如果是 Wap/PC，后端返回 { form: "<form>..." } 或 { url: "..." }
 
-      const { data: res } = await http.post('/payment/alipay', payload);
-
-      let rawResult;
+      // 这里一定拿到的是data，不是这种格式的让客户端处理好返回（因为uni.request、fetch等返回的数据格式均不一样）
+      const resp = await http.post<AlipayResponse>('/payment/alipay', payload);
 
       // 4. 执行 (Invoker 负责)
       // 场景 A: 表单跳转 (PC / Wap)
-      if (typeof res === 'string' && res.includes('<form')) {
-        const formInvoker = new FormInvoker();
-        // 这是一个“去而不返”的操作
-        return formInvoker.invoke(res);
+      if (typeof resp === 'string' && resp.includes('<form')) {
+        // 优化: 尽量通过工厂获取 Invoker，或者确保 FormInvoker 是无副作用的
+        const formInvoker = InvokerFactory.create('alipay', 'form');
+        return formInvoker.invoke(resp);
       }
 
-      // 场景 B: 小程序 / APP (返回的是 JSON 或 字符串类型的 orderStr)
+      // 场景 B: 小程序 / APP (返回的是 SON或字符串类型的 orderStr)
       // 支付宝在 UniApp 里，orderInfo 就是这个字符串
-      if (res.orderStr || (typeof res === 'string' && !res.includes('<'))) {
-        debugger;
-        const orderInfo = res.orderStr || res;
+      const orderStr = (resp as { orderStr?: string }).orderStr || (typeof resp === 'string' ? resp : null);
+      if (orderStr && !orderStr.includes('<')) {
         const invoker = InvokerFactory.create(this.name, invokerType);
-        rawResult = await invoker.invoke(orderInfo);
+        const result = await invoker.invoke(orderStr);
+        return this.adapter.normalize(result);
       }
 
-      debugger;
-      return this.adapter.normalize(rawResult);
+      // 修复 2: 场景 C (扫码付/异常兜底)
+      if ((resp as { qrCodeUrl?: string }).qrCodeUrl) {
+        return {
+          status: 'success',
+          raw: { action: 'qrcode', qrCode: (resp as any).qrCodeUrl },
+          message: '请展示二维码',
+        };
+      }
+
+      return { status: 'success', message: 'Alipay Invoke Success' };
     } catch (error: any) {
       return {
         status: 'fail',

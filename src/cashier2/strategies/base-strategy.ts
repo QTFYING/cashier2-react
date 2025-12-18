@@ -29,7 +29,7 @@ export abstract class BaseStrategy<TConfig = any> {
    * @param { StateCallBack } [onStateChange] 状态回调，SDK 在支付流转中更新状态时调用
    * @returns { Promise<PayResult> } 支付结果的 Promise
    */
-  abstract pay(params: PayParams, http: HttpClient, invokerType: SDKConfig['invokerType']): Promise<PayResult>;
+  abstract pay(params: PayParams, http: HttpClient, invokerType: SDKConfig['invokerType'], onStateChange?: StateCallBack): Promise<PayResult>;
 
   /**
    * 查询订单的支付状态

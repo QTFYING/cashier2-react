@@ -7,7 +7,7 @@ import { useCashier } from '../../hooks';
 const Payment: React.FC = () => {
   const [form] = Form.useForm();
 
-  const { pay, loading, statusText } = useCashier();
+  const { pay, loading, status, statusText } = useCashier();
 
   const onFinish = async (values: CreateOrderParams) => {
     try {
@@ -45,7 +45,9 @@ const Payment: React.FC = () => {
       </Form.Item>
 
       <Form.Item name="channel" label="支付状态">
-        <div>{statusText}</div>
+        <div>
+          {status} - {statusText}
+        </div>
       </Form.Item>
 
       <Form.Item>

@@ -12,6 +12,11 @@ interface WechatConfig {
   notifyUrl?: string;
 }
 
+type WechatResponse =
+  | { appId: string; timeStamp: string; nonceStr: string; package: string; signType: string; paySign: string } // // JSAPI 支付 / 小程序支付
+  | { mwebUrl: string } // H5 支付
+  | { codeUrl: string }; // Native 扫码支付
+
 export class WechatStrategy extends BaseStrategy<WechatConfig> {
   private adapter = new WechatAdapter();
 
@@ -59,7 +64,7 @@ export class WechatStrategy extends BaseStrategy<WechatConfig> {
 
       // 3. 后端签名 & 下单
       // 返回的参数，可以直接透传给Invoker（主要是5大金刚）
-      const signedData = await http.post('/payment/wechat', payload);
+      const signedData = await http.post<WechatResponse>('/payment/wechat', payload);
 
       // 4. 执行 (Invoker 负责)
       const invoker = InvokerFactory.create(this.name, invokerType);

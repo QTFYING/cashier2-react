@@ -106,6 +106,8 @@ export class PaymentContext extends EventBus {
       // Stage 5: Settlement
       if (result.status === 'success') {
         await this.driver.implant('onSuccess', ctx, result);
+      } else if (result.status === 'pending' || result.status === 'processing') {
+        await this.driver.implant('onStateChange', ctx, result);
       } else {
         await this.driver.implant('onFail', ctx, result);
       }

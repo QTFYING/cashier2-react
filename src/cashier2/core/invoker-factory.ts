@@ -1,5 +1,6 @@
 import { WebInvoker } from '../invokers';
 import { AlipayMiniInvoker } from '../invokers/alipay-mini-invoker';
+import { FormInvoker } from '../invokers/form-invoker';
 import { UniAppInvoker } from '../invokers/uni-invoker';
 import { WechatMiniInvoker } from '../invokers/wechat-mini-invoker';
 import type { PaymentInvoker } from '../types';
@@ -9,7 +10,7 @@ declare const uni: any;
 declare const wx: any;
 declare const my: any;
 
-export type InvokerType = 'uniapp' | 'web' | 'wechat-mini' | 'alipay-mini' | 'baidu-mini' | '';
+export type InvokerType = 'uniapp' | 'web' | 'wechat-mini' | 'alipay-mini' | 'baidu-mini' | 'form' | '';
 export type PayPlatformType = 'wechat' | 'alipay' | 'unionpay' | 'other';
 
 export class InvokerFactory {
@@ -23,6 +24,7 @@ export class InvokerFactory {
     if (type === 'uniapp') return new UniAppInvoker(channel as any);
     if (type === 'wechat-mini') return new WechatMiniInvoker(channel);
     if (type === 'alipay-mini') return new AlipayMiniInvoker(channel);
+    if (type === 'form') return new FormInvoker();
 
     // --- 2. 自动探测模式 (Auto Detect) ---
     // Type 1: UniApp (跨端框架)
