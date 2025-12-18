@@ -11,7 +11,18 @@ const Payment: React.FC = () => {
 
   const onFinish = async (values: CreateOrderParams) => {
     try {
-      const res = await pay(values.channel, { orderId: '123', amount: 100 });
+      const payload = { orderId: '123', amount: 100 };
+      if (values.channel === 'wechat') {
+        Object.assign(payload, {
+          extra: { body: '测试商品', tradeType: 'NATIVE' },
+        });
+      }
+      if (values.channel === 'alipay') {
+        Object.assign(payload, {
+          extra: { subject: '测试商品', mode: 'pc' },
+        });
+      }
+      const res = await pay(values.channel, payload);
       console.log('支付结果', res);
     } catch (err) {
       console.error(err);
