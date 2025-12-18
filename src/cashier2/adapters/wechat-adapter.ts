@@ -5,8 +5,8 @@
  * 附加数据：通常放在 attach 字段
  */
 import { PayError } from '../core/payment-error';
-import { PayErrorCode, PayParams, PayResult } from '../types';
-import { PaymentAdapter } from './payment-adapter';
+import { PayErrorCode, type PayParams, type PayResult } from '../types';
+import type { PaymentAdapter } from './payment-adapter';
 
 // 定义微信(统一下单接口)的数据结构
 export interface WechatPayload {

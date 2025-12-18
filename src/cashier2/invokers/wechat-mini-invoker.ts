@@ -1,4 +1,3 @@
-// src/invokers/wechat-mini-invoker.ts
 import { PayError } from '../core/payment-error';
 import { type PaymentInvoker, type PayResult, PayErrorCode } from '../types';
 

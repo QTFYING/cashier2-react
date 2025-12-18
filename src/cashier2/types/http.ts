@@ -4,7 +4,7 @@
  */
 export interface HttpClient {
   get<T = any>(url: string, config?: any): Promise<T>;
-  post<T = any>(url: string, data?: any, config?: any): Promise<T>;
+  post<T = any>(url: string, data?: any, config?: any): Promise<{ data: T; code: string; message: string }>;
   // 如果需要支持更多方法，可以在此扩展
 }
 
@@ -14,5 +14,7 @@ export interface HttpClient {
  */
 export interface HttpResponse<T = any> {
   data: T;
+  code: string;
+  message: string;
   [key: string]: any;
 }

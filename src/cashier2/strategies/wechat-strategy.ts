@@ -23,7 +23,7 @@ export class WechatStrategy extends BaseStrategy<WechatConfig> {
    * 真实逻辑: 调用后端查单API
    * Mock逻辑：在首次调用后的 10 秒内返回 pending，之后返回 success
    */
-  async getPaySt(orderId: string): Promise<PayResult> {
+  async getPaySt(_orderId: string): Promise<PayResult> {
     // 真实逻辑: 调用后端查单API
     // const res = await this.http.get(`/api/pay/query?id=${orderId}`);
     // return normalize(res);

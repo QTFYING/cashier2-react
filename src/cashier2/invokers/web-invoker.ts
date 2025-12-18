@@ -1,12 +1,11 @@
-import { PayPlatformType } from '../core/invoker-factory';
+import type { PayPlatformType } from '../core/invoker-factory';
 import { PayError } from '../core/payment-error';
-import { PayErrorCode, PaymentInvoker } from '../types';
+import { PayErrorCode, type PaymentInvoker } from '../types';
 import { ScriptLoader } from '../utils/script-loader';
 
 // 全局声明
-declare const wx: any;
+declare const _wx: any;
 declare const ap: any;
-declare const AlipayJSBridge: any;
 
 export class WebInvoker implements PaymentInvoker {
   constructor(private channel: PayPlatformType = 'other') {}

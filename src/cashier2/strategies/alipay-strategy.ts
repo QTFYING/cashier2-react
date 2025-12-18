@@ -2,7 +2,7 @@ import { AlipayAdapter } from '../adapters';
 import { InvokerFactory } from '../core/invoker-factory';
 import type { SDKConfig } from '../core/payment-context';
 import { FormInvoker } from '../invokers/form-invoker';
-import { HttpClient } from '../types';
+import type { HttpClient } from '../types';
 import type { PayParams, PayResult } from '../types/protocol';
 import { BaseStrategy } from './base-strategy';
 
@@ -58,25 +58,28 @@ export class AlipayStrategy extends BaseStrategy<AlipayConfig> {
       // 如果是 APP/小程序，后端返回 { orderStr: "..." }
       // 如果是 Wap/PC，后端返回 { form: "<form>..." } 或 { url: "..." }
 
-      const response = await http.post('/payment/alipay', payload);
+      const { data: res } = await http.post('/payment/alipay', payload);
+
       let rawResult;
 
       // 4. 执行 (Invoker 负责)
       // 场景 A: 表单跳转 (PC / Wap)
-      if (typeof response === 'string' && response.includes('<form')) {
+      if (typeof res === 'string' && res.includes('<form')) {
         const formInvoker = new FormInvoker();
         // 这是一个“去而不返”的操作
-        return formInvoker.invoke(response);
+        return formInvoker.invoke(res);
       }
 
       // 场景 B: 小程序 / APP (返回的是 JSON 或 字符串类型的 orderStr)
       // 支付宝在 UniApp 里，orderInfo 就是这个字符串
-      if (response.orderStr || (typeof response === 'string' && !response.includes('<'))) {
-        const orderInfo = response.orderStr || response;
+      if (res.orderStr || (typeof res === 'string' && !res.includes('<'))) {
+        debugger;
+        const orderInfo = res.orderStr || res;
         const invoker = InvokerFactory.create(this.name, invokerType);
         rawResult = await invoker.invoke(orderInfo);
       }
 
+      debugger;
       return this.adapter.normalize(rawResult);
     } catch (error: any) {
       return {

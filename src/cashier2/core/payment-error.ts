@@ -1,10 +1,10 @@
-// src/core/PayError.ts
 import { PayErrorCode } from '../types';
 
 export class PayError extends Error {
   public readonly transactionId: string;
   public readonly status: string;
   public readonly raw?: any; // 保留原始报错对象，方便 Sentry 上报
+  public readonly code: PayErrorCode;
 
   constructor(code: PayErrorCode, message: string, raw?: any) {
     super(message);
@@ -12,6 +12,7 @@ export class PayError extends Error {
     this.transactionId = 'PayError';
     this.message = message;
     this.raw = raw;
+    this.code = code;
 
     // 修复 TypeScript 继承 Error 时的原型链断裂问题 (ES5 target 下常见)
     Object.setPrototypeOf(this, PayError.prototype);

@@ -1,4 +1,3 @@
-// src/plugins/event-bridge-plugin.ts
 import type { PaymentContext } from '../core/payment-context';
 import type { PaymentPlugin } from '../types';
 
