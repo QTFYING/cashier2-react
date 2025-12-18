@@ -10,6 +10,7 @@ declare const wx: any;
 declare const my: any;
 
 export type InvokerType = 'uniapp' | 'web' | 'wechat-mini' | 'alipay-mini' | 'baidu-mini' | '';
+export type PayPlatformType = 'wechat' | 'alipay' | 'unionpay' | 'other';
 
 export class InvokerFactory {
   /**
@@ -17,7 +18,7 @@ export class InvokerFactory {
    * @param channel
    * @param type
    */
-  static create(channel: string, type?: InvokerType): PaymentInvoker {
+  static create(channel: PayPlatformType, type?: InvokerType): PaymentInvoker {
     // --- 1. 显式指定模式 (Explicit) ---
     if (type === 'uniapp') return new UniAppInvoker(channel as any);
     if (type === 'wechat-mini') return new WechatMiniInvoker(channel);

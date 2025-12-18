@@ -22,4 +22,5 @@ export enum PayErrorCode {
 
   PARAM_INVALID = 'PARAM_INVALID', // 参数无效
   GATEWAY_ERROR = 'GATEWAY_ERROR', // 预下单失败
+  INVOKE_FAILED = 'INVOKE_FAILED', // 调起支付控件失败
 }

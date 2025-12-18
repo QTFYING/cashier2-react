@@ -11,41 +11,43 @@ import type { PaymentAdapter } from './payment-adapter';
 export interface AlipayPayload {
   subject: string;
   out_trade_no: string;
-  total_amount: string; // 单位：元，字符串
-  product_code: string;
+  total_amount: string;
+  /**
+   * 支付方式：
+   * QUICK_MSECURITY_PAY：APP 支付
+   * QUICK_WAP_WAY：手机网页支付
+   * FAST_INSTANT_TRADE_PAY：电脑网站支付
+   * FACE_TO_FACE_PAYMENT：当面付
+   */
+  product_code: 'QUICK_WAP_WAY' | 'QUICK_MSECURITY_PAY' | 'FAST_INSTANT_TRADE_PAY' | 'FACE_TO_FACE_PAYMENT'; // <--- 关键字段，决定了是 Wap 还是 App
   body?: string;
-  passback_params?: string;
+  // ... 其他参数
   [key: string]: any;
 }
 
-export class AlipayAdapter implements PaymentAdapter<AlipayPayload> {
+export class AlipayAdapter implements PaymentAdapter<AlipayPayload, any> {
   // 1. 校验逻辑下沉到 Adapter
   validate(_params: PayParams): void {}
 
   transform(params: PayParams): AlipayPayload {
-    // 1. 金额转换：保留两位小数的字符串 (e.g., 100.00)
-    const totalAmount = params.amount.toFixed(2);
-
-    // 2. 构造标准支付宝参数
+    // 1. 默认处理
     const payload: AlipayPayload = {
-      // 映射描述 -> subject (支付宝必须有标题)
-      subject: params.description || `Order ${params.orderId}`,
-
+      subject: params.description || 'Order Payment',
       out_trade_no: params.orderId,
-
-      total_amount: totalAmount,
-
-      // 默认产品码，通常由 extra 覆盖
-      product_code: 'QUICK_WAP_WAY',
-
-      // 混合 extra 参数
-      ...params.extra,
+      total_amount: params.amount.toFixed(2), // 支付宝必须是两位小数的字符串
+      product_code: 'QUICK_WAP_WAY', // 默认给手机网页支付
+      ...params.extra, // 允许覆盖
     };
 
-    // 3. 特殊处理：passback_params 需要是字符串
-    // 如果用户在 extra 里传了对象，这里可以帮忙转一下
-    if (payload.passback_params && typeof payload.passback_params === 'object') {
-      payload.passback_params = encodeURIComponent(JSON.stringify(payload.passback_params));
+    // 2. 根据场景智能匹配 product_code (如果用户没传)
+    if (!payload.product_code) {
+      if (params.extra?.mode === 'app') {
+        payload.product_code = 'QUICK_MSECURITY_PAY'; // APP 支付
+      } else if (params.extra?.mode === 'pc') {
+        payload.product_code = 'FAST_INSTANT_TRADE_PAY'; // 电脑网站支付
+      } else if (params.extra?.mode === 'qr') {
+        payload.product_code = 'FACE_TO_FACE_PAYMENT'; // 当面付
+      }
     }
 
     return payload;

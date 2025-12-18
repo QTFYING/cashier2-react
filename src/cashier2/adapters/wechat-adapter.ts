@@ -5,8 +5,7 @@
  * 附加数据：通常放在 attach 字段
  */
 import { PayError } from '../core/payment-error';
-import { PayErrorCode } from '../types';
-import { PayParams, PayResult } from '../types/protocol';
+import { PayErrorCode, PayParams, PayResult } from '../types';
 import { PaymentAdapter } from './payment-adapter';
 
 // 定义微信(统一下单接口)的数据结构
@@ -16,6 +15,12 @@ export interface WechatPayload {
   total_fee: number; // 金额 单位：分
   spbill_create_ip?: string; // IP
   notify_url?: string;
+  /**
+   * 支付方式：
+   * JSAPI：浏览器端支付（微信内打开）
+   * MWEB：H5 支付（浏览器打开）
+   * NATIVE：扫码支付（生成二维码）
+   */
   trade_type?: 'JSAPI' | 'MWEB' | 'NATIVE';
   attach?: string;
   openid?: string;
@@ -80,9 +85,6 @@ export class WechatAdapter implements PaymentAdapter<WechatPayload> {
 
   /**
    * 其实微信支付设计的很鸡贼，所有支付方式都用通用的统一下单接口
-   * requestPayment:ok -> 小程序/UniApp
-   * chooseWXPay:ok    -> 公众号 JSSDK
-   * getBrandWCPayRequest:ok -> 老版本微信
    * 微信各种支付返回均放在rawResult中
    * Native 支付返回 rawResult 中包含 code_url
    * H5 跳转 (后端返回了 mweb_url)
@@ -91,8 +93,14 @@ export class WechatAdapter implements PaymentAdapter<WechatPayload> {
   normalize(rawResult: any): PayResult {
     const msg = rawResult?.errMsg || rawResult?.err_msg || '';
 
-    if (msg === 'requestPayment:ok' || msg === 'chooseWXPay:ok' || msg === 'getBrandWCPayRequest:ok') {
-      return { status: 'success', raw: rawResult };
+    // requestPayment:ok -> 小程序/UniApp
+    // chooseWXPay:ok    -> 公众号 JSSDK
+    // getBrandWCPayRequest:ok -> 老版本微信
+    // get_brand_wcpay_request:ok -> 最新版本微信
+
+    // 1. 支付成功
+    if (['requestPayment:fail', 'chooseWXPay:fail', 'getBrandWCPayRequest:fail', 'get_brand_wcpay_request:fail'].includes(msg)) {
+      return { status: 'fail', raw: rawResult };
     }
 
     // 2. 匹配取消

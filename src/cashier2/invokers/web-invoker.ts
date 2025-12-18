@@ -1,159 +1,145 @@
+import { PayPlatformType } from '../core/invoker-factory';
 import { PayError } from '../core/payment-error';
-import type { PayResult } from '../types';
-import { PayErrorCode } from '../types/errors';
-import type { PaymentInvoker } from '../types/invoker';
+import { PayErrorCode, PaymentInvoker, PayResult } from '../types';
 import { ScriptLoader } from '../utils/script-loader';
 
-// 声明全局对象防止 TS 报错
+// 全局声明
 declare const wx: any;
 declare const _ap: any;
+declare const AlipayJSBridge: any;
 
 export class WebInvoker implements PaymentInvoker {
-  constructor(private channel: string) {}
+  constructor(private channel: PayPlatformType = 'other') {}
 
-  /**
-   * 核心执行方法
-   * @param payload 经过 Strategy 处理后的标准化数据
-   * 对于微信，可能是 { appId, timeStamp... }
-   * 对于支付宝，可能是 HTML Form 字符串 或 URL
-   * 对于 H5/PC，可能是 { url: '...' }
-   */
   async invoke(payload: any): Promise<PayResult> {
     try {
-      // 1. 针对微信渠道的处理
+      // 1. 微信环境处理 (JSAPI / H5 / Native)
       if (this.channel === 'wechat') {
         return await this.handleWechat(payload);
       }
 
-      // 2. 针对支付宝渠道的处理
+      // 2. 支付宝环境处理 (JSAPI / URL)
+      // 注意：Form 表单逻辑已经被剥离，这里只处理支付宝内的 JSAPI 或 URL 跳转
       if (this.channel === 'alipay') {
         return await this.handleAlipay(payload);
       }
 
-      // 3. 通用兜底：如果 payload 里有 url，直接跳转
+      // 3. 通用 HTTP 跳转兜底
       if (payload.url || payload.mweb_url) {
         window.location.href = payload.url || payload.mweb_url;
         // 跳转后，页面通常会卸载，返回 pending 即可
         return { status: 'pending', message: 'Redirecting...' };
       }
 
-      throw new Error(`Unknown payload format for channel: ${this.channel}`);
+      throw new Error(`[WebInvoker] Unsupported payload for channel: ${this.channel}`);
     } catch (error: any) {
-      throw new PayError(PayErrorCode.PROVIDER_INTERNAL_ERROR, error.message || 'WebInvoker Execution Failed', error);
+      // 包装错误，保持对外统一
+      throw new PayError(PayErrorCode.INVOKE_FAILED, error.message || 'Web Invoke Failed', error);
     }
   }
 
   // ==========================================
-  //  Private Handlers (不同渠道的脏活累活)
+  //  微信专用逻辑
   // ==========================================
-
-  /**
-   * 处理微信支付逻辑
-   * 区分：微信内(JSAPI) vs 微信外(H5/Native)
-   */
   private async handleWechat(data: any): Promise<PayResult> {
-    const isWechatBrowser = /MicroMessenger/i.test(navigator.userAgent);
+    const ua = navigator.userAgent.toLowerCase();
+    const isWechatEnv = ua.indexOf('micromessenger') !== -1;
 
-    // 场景 A: 微信外部 (H5 / PC)
-    // 后端通常返回 mweb_url (H5跳转) 或 code_url (PC扫码)
-    if (!isWechatBrowser) {
+    // A. 微信外部 (H5跳转 或 PC扫码)
+    if (!isWechatEnv) {
+      // H5 链接跳转
       if (data.mweb_url) {
-        // H5 支付：直接跳走
         window.location.href = data.mweb_url;
-        return { status: 'pending', message: 'Redirecting to Wechat...' };
+        return { status: 'pending', message: 'Redirecting to Wechat H5...' };
       }
-
+      // Native 扫码链接 (不跳转，直接返回给 UI 渲染二维码)
       if (data.code_url) {
-        // PC 扫码：不能跳走，要把二维码链接返回给 UI 展示
         return {
           status: 'pending',
-          raw: data, // 把包含 code_url 的原始数据吐回去
-          message: 'Waiting for scan',
+          actionType: 'qrcode', // 标记给 Adapter/UI 识别
+          raw: data,
+          message: 'Please scan the QR code',
         };
       }
     }
 
-    // 场景 B: 微信内部 (JSAPI)
-    // 需要加载 jweixin.js 并调用 chooseWXPay
-    // 注意：这里复用了我们之前写的 ScriptLoader
-    await ScriptLoader.load('https://res.wx.qq.com/open/js/jweixin-1.6.0.js');
+    // B. 微信内部 (JSAPI)
+    // 只有在微信里，且 payload 是签名包时，才加载 SDK
+    if (isWechatEnv && data.paySign) {
+      await ScriptLoader.load('https://res.wx.qq.com/open/js/jweixin-1.6.0.js');
+      return this.callWechatBridge(data);
+    }
 
+    throw new Error('Invalid Wechat Payload for Web Environment');
+  }
+
+  private callWechatBridge(data: any): Promise<PayResult> {
     return new Promise((resolve, reject) => {
-      if (typeof wx === 'undefined') {
-        reject(new Error('Wechat JSSDK load failed'));
-        return;
-      }
+      const onBridgeReady = () => {
+        // 使用 WeixinJSBridge (非官方文档但极其稳定，无需 config)
+        // 如果需要 wx.chooseWXPay，则需要后端配合换取 ticket 做 config，流程太重
+        // appId, timeStamp, nonceStr, package, signType, paySign  6大核心参数，后台必须按照微信格式传递，SDK不做处理
+        (window as any).WeixinJSBridge.invoke('getBrandWCPayRequest', data, (res: any) => resolve(res));
+      };
 
-      // 注意：标准流程是先 wx.config -> wx.ready -> wx.chooseWXPay
-      // 但很多老项目使用 WeixinJSBridge (非官方但好用)，这里演示官方 JSSDK 流程
-      wx.chooseWXPay({
-        timestamp: data.timeStamp, // 注意大小写，微信很坑
-        nonceStr: data.nonceStr,
-        package: data.package,
-        signType: data.signType,
-        paySign: data.paySign,
-        success: (res: any) => {
-          // 微信返回 success 不代表一定到账，建议结合轮询
-          resolve({ status: 'success', transactionId: res.transactionId, raw: res });
-        },
-        fail: (err: any) => {
-          reject(new Error(err.errMsg || 'Wechat Pay Failed'));
-        },
-        cancel: () => {
-          resolve({ status: 'cancel', message: 'User cancelled' });
-        },
-      });
+      if (typeof (window as any).WeixinJSBridge == 'undefined') {
+        if (document.addEventListener) {
+          document.addEventListener('WeixinJSBridgeReady', onBridgeReady, false);
+        }
+      } else {
+        onBridgeReady();
+      }
     });
   }
 
-  /**
-   * 处理支付宝支付逻辑
-   * 区分：支付宝内(JSAPI) vs 网页(Form/URL)
-   */
+  // ==========================================
+  //  支付宝专用逻辑
+  // ==========================================
   private async handleAlipay(data: any): Promise<PayResult> {
-    const isAlipayBrowser = /AlipayClient/i.test(navigator.userAgent);
+    const ua = navigator.userAgent.toLowerCase();
+    const isAlipayEnv = ua.indexOf('alipayclient') !== -1;
 
-    // 场景 A: 支付宝内部 (JSAPI)
-    if (isAlipayBrowser) {
-      // 加载支付宝桥接库
+    // A. 支付宝内部 (JSAPI)
+    // 只有 tradeNO 且在支付宝环境才走 JSAPI
+    if (isAlipayEnv && (data.tradeNO || data.trade_no)) {
       await ScriptLoader.load('https://gw.alipayobjects.com/as/g/h5-lib/alipayjsapi/3.1.1/alipayjsapi.min.js');
-
-      return new Promise((resolve) => {
-        // 逻辑同之前的 AlipayJSSDKStrategy，略...
-        // ap.tradePay(...)
-        resolve({ status: 'pending' });
-      });
+      return this.callAlipayBridge(data.tradeNO || data.trade_no);
     }
 
-    // 场景 B: 网页支付 (最常见的是 Form 表单提交)
-    // 后端返回一段 <form action="...">...</form><script>submit()</script>
-    if (typeof data === 'string' && data.includes('<form')) {
-      const div = document.createElement('div');
-      div.innerHTML = data; // 插入 HTML
-      div.style.display = 'none';
-      document.body.appendChild(div);
-
-      // 找到 form 并提交
-      const form = div.querySelector('form');
-      if (form) {
-        form.submit();
-        // 提交后页面会跳转，返回 pending
-        return { status: 'pending', message: 'Redirecting to Alipay...' };
-      }
-      throw new Error('Invalid Alipay Form Data');
-    }
-
-    // 场景 C: 支付宝 PC 扫码 (返回 URL)
-    if (data.qrCodeUrl) {
-      return { status: 'pending', raw: data };
-    }
-
-    // 场景 D: 普通跳转链接
+    // B. 外部 H5 跳转 (Wap 支付返回 URL 的情况)
     if (data.url) {
       window.location.href = data.url;
-      return { status: 'pending' };
+      return { status: 'pending', message: 'Redirecting to Alipay...' };
     }
 
-    throw new Error('Unknown Alipay payload');
+    // C. PC 扫码
+    if (data.qrCodeUrl || data.qr_code) {
+      return {
+        status: 'pending',
+        actionType: 'qrcode',
+        raw: data,
+      };
+    }
+
+    throw new Error('For Alipay HTML Form, please use FormInvoker instead.');
+  }
+
+  private callAlipayBridge(tradeNO: string): Promise<PayResult> {
+    return new Promise((resolve, reject) => {
+      const invoke = () => {
+        _ap.tradePay({ tradeNO: tradeNO }, (res: any) => {
+          // 支付宝 JSAPI 回调代码转换
+          // 9000 成功, 6001 取消...
+          // 这里直接返回 raw，交给 Adapter.normalize 去洗
+          resolve({ status: 'success', raw: res });
+        });
+      };
+
+      if ((window as any).AlipayJSBridge) {
+        invoke();
+      } else {
+        document.addEventListener('AlipayJSBridgeReady', invoke, false);
+      }
+    });
   }
 }
