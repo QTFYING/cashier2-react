@@ -3,6 +3,7 @@ import React, { useEffect, useMemo } from 'react';
 import { AlipayStrategy, PaymentContext, WechatStrategy, type SDKConfig } from '../cashier2';
 import { MockStrategy } from '../cashier2/strategies';
 import { CashierContext } from './cashier-context';
+import { AuthPlugin, LoadingPlugin, LoggerPlugin } from './plugin';
 
 // 2. 定义 Provider 的 Props
 // 我们提供两种模式：
@@ -31,10 +32,16 @@ export const CashierProvider: React.FC<CashierProviderProps> = ({ config, client
 
   // 可选：组件卸载时清理资源 (如停止轮询)
   useEffect(() => {
+    // 1. 注册默认策略
     cashierInstance
       .register(new WechatStrategy({ appId: 'wx888888', mchId: '123456' }))
       .register(new AlipayStrategy({ appId: '2021000000', privateKey: '...' }))
       .register(new MockStrategy());
+
+    // 2. 注册默认插件 (全局副作用，确保只注册一次, 这个一定不能放在 Hooks 内)
+    // 在 Hook 中注册会导致每次组件挂载都重复添加插件（如重复的 Logger 或 Loading），造成性能浪费和潜在 Bug
+    // 注意：PaymentContext.use 没有去重逻辑，但在 React 18 Strict Mode 下 useEffect 会执行两次
+    cashierInstance.use(LoggerPlugin).use(LoadingPlugin).use(AuthPlugin);
 
     return () => {
       // 如果 SDK 有 destroy 方法，可以在这里调用

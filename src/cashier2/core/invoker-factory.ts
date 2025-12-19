@@ -21,7 +21,7 @@ export class InvokerFactory {
    */
   static create(channel: PayPlatformType, type?: InvokerType): PaymentInvoker {
     // --- 1. 显式指定模式 (Explicit) ---
-    if (type === 'uniapp') return new UniAppInvoker(channel as any);
+    if (type === 'uniapp') return new UniAppInvoker(channel);
     if (type === 'wechat-mini') return new WechatMiniInvoker(channel);
     if (type === 'alipay-mini') return new AlipayMiniInvoker(channel);
     if (type === 'form') return new FormInvoker();

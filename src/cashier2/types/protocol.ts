@@ -1,5 +1,11 @@
 /**
  * 统一支付结果状态
+ * 用于表示支付的最终结果状态
+ * fail 失败
+ * cancel 取消
+ * success 成功
+ * pending 待支付
+ * processing 处理中
  */
 export type PaySt = 'success' | 'fail' | 'cancel' | 'pending' | 'processing';
 
@@ -22,6 +28,14 @@ export interface PayParams {
   extra?: Record<string, any>;
 }
 
+export type PaymentActionType = 'qrcode' | 'url_jump' | 'none';
+
+export interface PaymentAction {
+  type: PaymentActionType;
+  value: string; // 二维码的内容 或 跳转的 URL
+  expireAt?: number; // 可选：二维码过期时间
+}
+
 /**
  * 统一支付结果
  * 屏蔽了具体 SDK (微信/支付宝) 的返回差异
@@ -31,9 +45,7 @@ export interface PayResult {
   transactionId?: string; // 第三方流水号 (Wechat Transaction ID / Alipay Trade No)
   message?: string; // 描述信息
   raw?: any; // 原始返回数据 (作为逃生舱，方便调试)
-  action?: 'qrcode' | 'url'; // 扫码或跳转时才有
-  code?: string; // 扫码时才有
-  url?: string; // 跳转时才有
+  action?: PaymentAction; // 扫码或跳转时才有
 }
 
 /**

@@ -93,16 +93,18 @@ export class WechatAdapter implements PaymentAdapter<WechatPayload> {
   normalize(rawResult: any): PayResult {
     // 1. 识别 Invoker 透传出来的“指令动作” (如 PC 扫码、H5 跳转)
 
+    const actionType = rawResult?.action ?? '';
+
     // A: 扫码，是一个中间态，需要进入轮询
-    if (rawResult?.action === 'qrcode') {
-      const { action, code, original } = rawResult;
-      return { action, code, status: 'pending', raw: original, message: '请扫码...' };
+    if (actionType === 'qrcode') {
+      const { code, original } = rawResult;
+      return { action: { type: 'qrcode', value: code }, status: 'pending', raw: original, message: '请扫描二维码支付...' };
     }
 
     // B: 跳转，跳转后状态未知，需进入轮询或等待回调
-    if (rawResult?.action === 'url_jump') {
-      const { action, url, original } = rawResult;
-      return { action, url, status: 'pending', raw: original, message: '跳转中...' };
+    if (actionType === 'url_jump') {
+      const { url, original } = rawResult;
+      return { action: { type: 'url_jump', value: url }, status: 'pending', raw: original, message: '正在跳转支付...' };
     }
 
     // C: JSAPI & Bridge
@@ -124,10 +126,6 @@ export class WechatAdapter implements PaymentAdapter<WechatPayload> {
     }
 
     // 3. 其他全算失败
-    return {
-      status: 'fail',
-      message: msg || '微信支付失败',
-      raw: rawResult,
-    };
+    return { status: 'fail', message: msg || '微信支付失败', raw: rawResult };
   }
 }
