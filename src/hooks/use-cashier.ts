@@ -84,7 +84,12 @@ export function useCashier(options: UseCashierOptions = {}) {
     [cashier],
   );
 
-  // --- 3. 上下游场景：退款 ---
+  // --- 3. reset 状态 ---
+  const reset = () => {
+    setState({ loading: false, status: null, result: null, error: null, action: null });
+  };
+
+  // --- 4. 上下游场景：退款 ---
   const refund = useCallback(() => {}, []);
 
   return {
@@ -95,9 +100,12 @@ export function useCashier(options: UseCashierOptions = {}) {
     status: state.status,
     statusText: state.status ? PaymentStatusEnum[state.status] : '',
 
-    // 实例与方法
-    cashier,
+    // 方法
     pay,
+    reset,
     refund,
+
+    // 实例
+    cashier,
   };
 }

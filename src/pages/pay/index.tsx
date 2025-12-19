@@ -24,7 +24,7 @@ const Payment: React.FC = () => {
   // 用于控制二维码过期视觉状态
   const [isQrExpired, setIsQrExpired] = useState(false);
 
-  const { pay, loading, status, result, statusText, cashier } = useCashier();
+  const { reset, pay, loading, status, result, statusText, cashier } = useCashier();
 
   const qrValue = useMemo(() => {
     const action = result?.action;
@@ -33,13 +33,6 @@ const Payment: React.FC = () => {
   }, [result]);
 
   const expireAt = result?.raw?.expired_time;
-
-  // 每次获取到新的二维码结果时，重置过期状态
-  useEffect(() => {
-    if (expireAt) {
-      setIsQrExpired(Date.now() > expireAt);
-    }
-  }, [expireAt]);
 
   // 业务载荷组装函数
   const onFinalOpts = (channel: string) => {
@@ -77,7 +70,8 @@ const Payment: React.FC = () => {
     form.resetFields(['channel']); // 可选：是否重置渠道
     // 注意：这里可能需要调用 cashier.reset() 如果你的 hook 暴露了重置状态的方法
     // 假设 hook 没有暴露 reset，通过组件卸载/重挂载或状态清理来模拟
-    window.location.reload(); // 最简单的清理，实际项目中应调用 store.reset()
+    reset();
+    // window.location.reload(); // 最简单的清理，实际项目中应调用 store.reset()
   };
 
   const onRefreshQr = async () => {
