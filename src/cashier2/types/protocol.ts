@@ -7,7 +7,7 @@
  * pending 待支付
  * processing 处理中
  */
-export type PaySt = 'success' | 'fail' | 'cancel' | 'pending' | 'processing';
+export type PaySt = 'pending' | 'processing' | 'success' | 'fail' | 'cancel';
 
 /**
  * 定义支持的支付渠道

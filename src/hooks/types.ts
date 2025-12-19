@@ -1,4 +1,4 @@
-import type { PayError, PaymentPlugin, PayParams, PayResult } from '../cashier2';
+import type { PayError, PaymentAction, PaymentPlugin, PayParams, PayResult } from '../cashier2';
 import { PaymentStatusEnum } from './enums';
 
 // --- 入参配置 ---
@@ -32,4 +32,5 @@ export interface CashierState {
   status: keyof typeof PaymentStatusEnum;
   result: PayResult | null;
   error: PayError | null;
+  action: PaymentAction | null;
 }

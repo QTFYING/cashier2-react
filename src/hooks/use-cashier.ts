@@ -2,13 +2,11 @@ import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import type { PayParams, PayResult } from '../cashier2';
 import { CashierContext } from './cashier-context';
 import { PaymentStatusEnum } from './enums';
-
 import type { CashierState, UseCashierOptions } from './types';
 
 export function useCashier(options: UseCashierOptions = {}) {
   const context = useContext(CashierContext);
 
-  // 1. 安全性优化：确保 Context 存在
   if (!context) {
     throw new Error('useCashier must be used within a CashierProvider');
   }
@@ -16,45 +14,40 @@ export function useCashier(options: UseCashierOptions = {}) {
   const { cashier } = context;
 
   // --- 状态管理 ---
-  const [state, setState] = useState<CashierState>({ loading: false, status: 'idle', result: null, error: null });
+  // 保持聚合状态，方便统一重置
+  const [state, setState] = useState<CashierState>({ loading: false, status: 'pending', result: null, error: null, action: null });
 
-  // 使用 Ref 保存回调，防止 useEffect 依赖频繁变化导致重复绑定事件
+  // Ref 保持引用，避免 useEffect 依赖地狱
   const optionsRef = useRef(options);
   optionsRef.current = options;
 
-  // --- 1. 事件监听 (EventBus 桥接) ---
+  // --- 1. 事件监听 (负责处理 异步/被动 更新) ---
+  // 场景：轮询查单成功、用户扫码成功、超时自动关闭
   useEffect(() => {
     if (!cashier) return;
 
-    // 2. 优化：提取处理函数，以便正确解绑 (off)
     const handleSuccess = (res: PayResult) => {
-      setState((s) => ({ ...s, loading: false, status: 'success', result: res }));
+      setState((s) => ({ ...s, loading: false, status: 'success', result: res, action: null }));
       optionsRef.current.onSuccess?.(res);
     };
 
     const handleFail = (err: any) => {
-      setState((s) => ({ ...s, loading: false, status: 'fail', error: err }));
+      setState((s) => ({ ...s, loading: false, status: 'fail', error: err, action: null }));
       optionsRef.current.onError?.(err);
     };
 
     const handleStatusChange = (payload: { status: string; result?: any }) => {
       // 这里的 status 可能是 'pending' (轮询中)
       optionsRef.current.onStatusChange?.(payload.status, payload.result);
-      if (payload.status === 'pending') {
-        setState((s) => ({ ...s, status: 'processing' }));
-      }
+
+      // 如果轮询过程中状态变了，更新一下 UI (比如显示"已扫码，等待确认")
+      setState((s) => ({ ...s, status: payload.status as any }));
     };
 
-    // 绑定事件
     cashier.on('success', handleSuccess);
     cashier.on('fail', handleFail);
     cashier.on('statusChange', handleStatusChange);
 
-    // 3. 优化：移除 hook 内的插件注册
-    // 插件注册是全局副作用，应该在 App 启动或 Provider 中完成，而不是每次 hook 挂载都重复注册
-    // cashier.use(LoggerPlugin).use(LoadingPlugin).use(AuthPlugin);
-
-    // 4. 优化：清理时仅移除当前 hook 的监听器，而不是清空所有 (cashier.clear() 是破坏性的)
     return () => {
       cashier.off('success', handleSuccess);
       cashier.off('fail', handleFail);
@@ -62,18 +55,30 @@ export function useCashier(options: UseCashierOptions = {}) {
     };
   }, [cashier]);
 
-  // --- 2. 核心支付动作 ---
+  // --- 2. 核心支付动作 (负责处理 同步/主动 反馈) ---
+  // 场景：点击支付按钮 -> loading -> 拿到二维码/跳转链接
   const pay = useCallback(
     async (strategyName: string, params: PayParams) => {
-      setState((s) => ({ ...s, loading: true, error: null, status: 'processing' }));
+      // 1. 重置状态
+      setState((s) => ({ ...s, loading: true, error: null, status: 'processing', action: null, result: null }));
 
       try {
+        // 2. 执行 SDK
+        // 注意：这里的 res 包含了即时结果 (比如 pending + qrcode)
         const res = await cashier.execute(strategyName, params);
+
+        // 3. 关键: 立即根据返回值更新状态
+        // 不要等待 EventBus，因为如果是扫码模式，EventBus此时可能不会触发任何事件
+        // 如果是 pending (扫码/跳转)，loading 应该结束，让用户去操作
+        // 如果是 success (免密扣款)，loading 也结束
+        setState((s) => ({ ...s, loading: false, status: res.status, result: res, action: res.action || null }));
+
         return res;
       } catch (err: any) {
-        throw new Error(err.message || '支付失败');
-      } finally {
-        setState((s) => ({ ...s, loading: false }));
+        // 错误已经在 handleFail 里处理过状态了，这里主要是为了让 await pay() 的调用者能 catch 到
+        // 为了防止状态没更新 (比如 error 在 EventBus 触发前就抛出了)，这里兜底设一次
+        setState((s) => ({ ...s, loading: false, error: err, status: 'fail' }));
+        throw err; // 继续抛出，让 UI 层处理
       }
     },
     [cashier],
@@ -82,8 +87,17 @@ export function useCashier(options: UseCashierOptions = {}) {
   // --- 3. 上下游场景：退款 ---
   const refund = useCallback(() => {}, []);
 
-  // --- 4. 营销计算 (纯逻辑) ---
-  const calculatePrice = useCallback(() => {}, []);
+  return {
+    // 基础状态
+    loading: state.loading,
+    result: state.result,
+    error: state.error,
+    status: state.status,
+    statusText: PaymentStatusEnum[state.status] || '',
 
-  return { ...state, pay, refund, cashier, calculatePrice, statusText: PaymentStatusEnum[state.status] };
+    // 实例与方法
+    cashier,
+    pay,
+    refund,
+  };
 }
