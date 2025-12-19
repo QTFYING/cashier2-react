@@ -1,3 +1,4 @@
+import Mock from 'mockjs';
 import type { MockMethod } from 'vite-plugin-mock';
 
 export default [
@@ -77,6 +78,8 @@ export default [
           code: 200,
           message: 'Payment successful',
           data: {
+            transaction_id: Mock.Random.uuid(),
+            expired_time: Date.now() + 60 * 1000, // 1 分钟后过期
             mweb_url: 'https://wx.tenpay.com/cgi-bin/mmpayweb-bin/checkmweb?prepay_id=wx2016121516420242444321ca0631331346&package=1495451171',
           },
         };
@@ -87,6 +90,8 @@ export default [
           code: 200,
           message: 'Payment successful',
           data: {
+            transaction_id: Mock.Random.uuid(),
+            expired_time: Date.now() + 60 * 1000, // 1 分钟后过期
             code_url: 'weixin://wxpay/bizpayurl?pr=1234567',
           },
         };

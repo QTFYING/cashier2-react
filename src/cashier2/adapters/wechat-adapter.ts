@@ -30,9 +30,6 @@ export interface WechatPayload {
 export class WechatAdapter implements PaymentAdapter<WechatPayload> {
   // 1. 校验传入参数
   validate(params: PayParams): void {
-    if (!params.orderId) {
-      throw new PayError(PayErrorCode.PARAM_INVALID, 'Missing orderId', 'wechat');
-    }
     // 微信 JSAPI 支付特定校验
     if (params.extra?.trade_type === 'JSAPI' && !params.extra?.openid) {
       throw new PayError(PayErrorCode.PARAM_INVALID, 'JSAPI payment requires openid', 'wechat');

@@ -33,7 +33,6 @@ export type PaymentActionType = 'qrcode' | 'url_jump' | 'none';
 export interface PaymentAction {
   type: PaymentActionType;
   value: string; // 二维码的内容 或 跳转的 URL
-  expireAt?: number; // 可选：二维码过期时间
 }
 
 /**
