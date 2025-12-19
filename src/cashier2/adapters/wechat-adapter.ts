@@ -57,18 +57,19 @@ export class WechatAdapter implements PaymentAdapter<WechatPayload> {
    */
   transform(params: PayParams): WechatPayload {
     // 1. 默认 JSAPI，但允许 extra 覆盖
-    const tradeType = params.extra?.tradeType || 'JSAPI';
+    const { tradeType = 'JSAPI', ...rest } = params.extra || {};
 
     // 2. 校验：JSAPI 必须有 openid
     if (tradeType === 'JSAPI' && !params.extra?.openid) {
       throw new Error('JSAPI requires openid');
     }
 
+    // 3. 构建基础参数
     const payload = {
       body: (params.description || '商品支付').substring(0, 127), // 自动截断
       out_trade_no: params.orderId,
       total_fee: Math.round(params.amount * 100), // 元转分
-      ...params.extra, // 透传高级参数
+      ...rest, // 透传高级参数
       trade_type: tradeType, // 核心参数
     };
 

@@ -6,6 +6,7 @@ import type { CashierState, UseCashierOptions } from './types';
 
 export function useCashier(options: UseCashierOptions = {}) {
   const context = useContext(CashierContext);
+  const [orderId, setOrderId] = useState('');
 
   if (!context) {
     throw new Error('useCashier must be used within a CashierProvider');
@@ -28,17 +29,18 @@ export function useCashier(options: UseCashierOptions = {}) {
 
     const handleSuccess = (res: PayResult) => {
       setState((s) => ({ ...s, loading: false, status: 'success', result: res, action: null }));
-      optionsRef.current.onSuccess?.(res);
+      options?.onSuccess?.(res);
+      cashier.stopPolling();
     };
 
     const handleFail = (err: any) => {
       setState((s) => ({ ...s, loading: false, status: 'fail', error: err, action: null }));
-      optionsRef.current.onError?.(err);
+      options?.onError?.(err);
     };
 
     const handleStatusChange = (payload: { status: string; result?: any }) => {
       // 这里的 status 可能是 'pending' (轮询中)
-      optionsRef.current.onStatusChange?.(payload.status, payload.result);
+      options?.onStatusChange?.(payload.status, payload.result);
 
       // 如果轮询过程中状态变了，更新一下 UI (比如显示"已扫码，等待确认")
       setState((s) => ({ ...s, status: payload.status as any }));
@@ -53,7 +55,7 @@ export function useCashier(options: UseCashierOptions = {}) {
       cashier.off('fail', handleFail);
       cashier.off('statusChange', handleStatusChange);
     };
-  }, [cashier]);
+  }, [cashier, options]);
 
   // --- 2. 核心支付动作 (负责处理 同步/主动 反馈) ---
   // 场景：点击支付按钮 -> loading -> 拿到二维码/跳转链接
@@ -92,6 +94,14 @@ export function useCashier(options: UseCashierOptions = {}) {
   // --- 4. 上下游场景：退款 ---
   const refund = useCallback(() => {}, []);
 
+  // --- 5. 上下游场景：创建订单 ---
+  const create = async (params: any) => {
+    // 建议hooks中的http请求全部读取context中的http实例
+    const { orderId } = await cashier.http.post('/payment/create', params);
+    setOrderId(orderId);
+    return orderId;
+  };
+
   return {
     // 基础状态
     loading: state.loading,
@@ -100,10 +110,14 @@ export function useCashier(options: UseCashierOptions = {}) {
     status: state.status,
     statusText: state.status ? PaymentStatusEnum[state.status] : '',
 
+    // 订单相关信息
+    orderId,
+
     // 方法
     pay,
     reset,
     refund,
+    create,
 
     // 实例
     cashier,

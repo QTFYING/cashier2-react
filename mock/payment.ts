@@ -3,6 +3,20 @@ import type { MockMethod } from 'vite-plugin-mock';
 
 export default [
   {
+    // 创建商户订单
+    url: '/api/payment/create',
+    method: 'post',
+    response: () => {
+      return {
+        code: 200,
+        message: 'Order created successfully',
+        data: {
+          orderId: Mock.Random.uuid(),
+        },
+      };
+    },
+  },
+  {
     url: '/api/payment/alipay',
     method: 'post',
     response: ({ body }: { body: any }) => {
@@ -78,7 +92,8 @@ export default [
           code: 200,
           message: 'Payment successful',
           data: {
-            transaction_id: Mock.Random.uuid(),
+            order_id: Mock.Random.uuid(), // 商户订单号
+            transaction_id: Mock.Random.uuid(), // 微信支付单号
             expired_time: Date.now() + 60 * 1000, // 1 分钟后过期
             mweb_url: 'https://wx.tenpay.com/cgi-bin/mmpayweb-bin/checkmweb?prepay_id=wx2016121516420242444321ca0631331346&package=1495451171',
           },
@@ -90,7 +105,8 @@ export default [
           code: 200,
           message: 'Payment successful',
           data: {
-            transaction_id: Mock.Random.uuid(),
+            order_id: Mock.Random.uuid(), // 商户订单号
+            transaction_id: Mock.Random.uuid(), // 微信支付单号
             expired_time: Date.now() + 60 * 1000, // 1 分钟后过期
             code_url: 'weixin://wxpay/bizpayurl?pr=1234567',
           },

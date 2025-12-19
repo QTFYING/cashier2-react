@@ -66,6 +66,9 @@ export class WechatStrategy extends BaseStrategy<WechatConfig> {
       // 返回的参数，可以直接透传给Invoker（主要是5大金刚）
       const signedData = await http.post<WechatResponse>('/payment/wechat', payload);
 
+      // mock数据，每次执行的时候，重制一下开始时间
+      this.startTime = Date.now();
+
       // 4. 执行 (Invoker 负责)
       const invoker = InvokerFactory.create(this.name, invokerType);
 

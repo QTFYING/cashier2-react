@@ -24,7 +24,7 @@ const Payment: React.FC = () => {
   // 用于控制二维码过期视觉状态
   const [isQrExpired, setIsQrExpired] = useState(false);
 
-  const { reset, pay, loading, status, result, statusText, cashier } = useCashier();
+  const { reset, pay, orderId, create, loading, status, result, statusText, cashier } = useCashier();
 
   const qrValue = useMemo(() => {
     const action = result?.action;
@@ -34,16 +34,6 @@ const Payment: React.FC = () => {
 
   const expireAt = result?.raw?.expired_time;
 
-  // 业务载荷组装函数
-  const onFinalOpts = (channel: string) => {
-    const base = { amount: 100 };
-    const extraMap: Record<string, any> = {
-      wechat: { extra: { body: '测试商品', tradeType: 'NATIVE' } },
-      alipay: { extra: { subject: '测试商品', mode: 'pc' } },
-    };
-    return { ...base, ...(extraMap[channel] || {}) };
-  };
-
   const onFinish = async (values: CreateOrderParams) => {
     // 如果已经支付成功，点击按钮则是“下一单”的逻辑：重置状态
     if (status === 'success') {
@@ -52,9 +42,15 @@ const Payment: React.FC = () => {
     }
 
     try {
+      const orderId = await create({ amount: 100, productId: 'A123456789' });
       setCreatedSt(true);
-      // 此时还没有生成订单号
-      const payload = onFinalOpts(values.channel);
+
+      const base = { amount: 100 };
+      const extraMap: Record<string, any> = {
+        wechat: { extra: { body: '测试商品', tradeType: 'NATIVE' } },
+        alipay: { extra: { subject: '测试商品', mode: 'pc' } },
+      };
+      const payload = { ...base, orderId, ...(extraMap[channel] || {}) };
       await pay(values.channel, payload);
 
       // 发起新支付时，重置过期标记
@@ -83,11 +79,11 @@ const Payment: React.FC = () => {
   // 轮询控制
   useEffect(() => {
     if (channel === 'wechat' && qrValue && (status === 'pending' || status === 'processing')) {
-      cashier.startPolling('wechat', result?.raw?.transaction_id);
+      cashier.startPolling('wechat', orderId);
     } else if (status === 'success' || status === 'fail') {
       cashier.stopPolling();
     }
-  }, [cashier, channel, qrValue, status, result]);
+  }, [cashier, channel, qrValue, status, orderId]);
 
   // 组件卸载清理
   useEffect(() => () => cashier.stopPolling(), [cashier]);
@@ -148,7 +144,7 @@ const Payment: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
+    <div className="max-w-6xl mx-auto p-6" key={orderId}>
       <Typography.Title level={3} className="m-0">
         在线收银台
       </Typography.Title>
@@ -166,6 +162,10 @@ const Payment: React.FC = () => {
             )}
 
             <Form form={form} onFinish={onFinish} initialValues={{ channel: 'alipay' }} layout="vertical">
+              <Form.Item name="orderId" label="订单号">
+                <span className="text-gray-400 text-xs">{orderId || '订单号创建中～'}</span>
+              </Form.Item>
+
               <Form.Item name="channel" label="支付方式" rules={[{ required: true }]}>
                 <Radio.Group className="w-full">
                   <Radio.Button value="alipay" className="mr-4 text-center w-32 h-10 leading-10">
@@ -191,6 +191,7 @@ const Payment: React.FC = () => {
                   </div>
                 </Form.Item>
               )}
+
               {!isCreated && <div className="h-[92px]" />}
 
               <Form.Item className="mb-0 mt-4">
