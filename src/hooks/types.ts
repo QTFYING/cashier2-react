@@ -29,7 +29,7 @@ export interface CashierActions {
 
 export interface CashierState {
   loading: boolean;
-  status: keyof typeof PaymentStatusEnum;
+  status: keyof typeof PaymentStatusEnum | null;
   result: PayResult | null;
   error: PayError | null;
   action: PaymentAction | null;

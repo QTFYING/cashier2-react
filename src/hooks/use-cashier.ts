@@ -15,7 +15,7 @@ export function useCashier(options: UseCashierOptions = {}) {
 
   // --- 状态管理 ---
   // 保持聚合状态，方便统一重置
-  const [state, setState] = useState<CashierState>({ loading: false, status: 'pending', result: null, error: null, action: null });
+  const [state, setState] = useState<CashierState>({ loading: false, status: null, result: null, error: null, action: null });
 
   // Ref 保持引用，避免 useEffect 依赖地狱
   const optionsRef = useRef(options);
@@ -93,7 +93,7 @@ export function useCashier(options: UseCashierOptions = {}) {
     result: state.result,
     error: state.error,
     status: state.status,
-    statusText: PaymentStatusEnum[state.status] || '',
+    statusText: state.status ? PaymentStatusEnum[state.status] : '',
 
     // 实例与方法
     cashier,
