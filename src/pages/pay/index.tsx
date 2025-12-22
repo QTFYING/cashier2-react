@@ -110,7 +110,7 @@ const Payment: React.FC = () => {
       return (
         <>
           <Typography.Title level={4}>微信扫码支付</Typography.Title>
-          <div className="my-4 relative flex justify-center items-center" style={{ width: 216, height: 216 }}>
+          <div className="my-4 relative flex justify-center items-center w-216px h-216px">
             {/* 骨架屏与二维码互斥显示 */}
             {loading || !qrValue ? (
               <Skeleton.Avatar shape="square" active size={216} className="absolute inset-0" />

@@ -59,35 +59,21 @@ export class AlipayStrategy extends BaseStrategy<any> {
       // 如果是 Wap/PC，后端返回 { form: "<form>..." } 或 { url: "..." }
 
       // 这里一定拿到的是data，不是这种格式的让客户端处理好返回（因为uni.request、fetch等返回的数据格式均不一样）
-      const resp = await http.post<AlipayResponse>('/payment/alipay', payload);
+      const signedData = await http.post<AlipayResponse>('/payment/alipay', payload);
 
-      // 4. 执行 (Invoker 负责)
-      // 场景 A: 表单跳转 (PC / Wap)
-      if (typeof resp === 'string' && resp.includes('<form')) {
-        // 优化: 尽量通过工厂获取 Invoker，或者确保 FormInvoker 是无副作用的
-        const formInvoker = InvokerFactory.create('alipay', 'form');
-        return formInvoker.invoke(resp);
-      }
+      // mock数据，每次执行的时候，重制一下开始时间
+      this.startTime = Date.now();
 
       // 场景 B: 小程序 / APP (返回的是 SON或字符串类型的 orderStr)
       // 支付宝在 UniApp 里，orderInfo 就是这个字符串
-      const orderStr = (resp as { orderStr?: string }).orderStr || (typeof resp === 'string' ? resp : null);
-      if (orderStr && !orderStr.includes('<')) {
-        const invoker = InvokerFactory.create(this.name, invokerType);
-        const result = await invoker.invoke(orderStr);
-        return this.adapter.normalize(result);
-      }
+      const orderStr = (signedData as { orderStr?: string }).orderStr || (typeof signedData === 'string' ? signedData : null);
 
-      // 修复 2: 场景 C (扫码付/异常兜底)
-      if ((resp as { qrCodeUrl?: string }).qrCodeUrl) {
-        return {
-          status: 'success',
-          raw: { action: 'qrcode', qrCode: (resp as any).qrCodeUrl },
-          message: '请展示二维码',
-        };
-      }
+      // 4. 执行 (Invoker 负责)
+      const invoker = InvokerFactory.create(this.name, invokerType);
 
-      return { status: 'success', message: 'Alipay Invoke Success' };
+      const invokeRes = await invoker.invoke(orderStr);
+
+      return this.adapter.normalize(invokeRes);
     } catch (error: any) {
       return {
         status: 'fail',

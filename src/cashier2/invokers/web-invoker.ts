@@ -66,6 +66,38 @@ export class WebInvoker implements PaymentInvoker {
     throw new Error('Invalid Wechat Payload for Web Environment');
   }
 
+  /* ========================================== 支付宝专用逻辑 ==========================================*/
+
+  private async handleAlipay(data: any): Promise<any> {
+    const ua = navigator.userAgent.toLowerCase();
+    const isAlipayEnv = ua.indexOf('alipayclient') !== -1;
+
+    // JSAPI，只有 tradeNO 且在支付宝环境才走 JSAPI
+    if (isAlipayEnv && (data.tradeNO || data.trade_no)) {
+      await ScriptLoader.load('https://gw.alipayobjects.com/as/g/h5-lib/alipayjsapi/3.1.1/alipayjsapi.min.js');
+      return this.invokerAlipay(data.tradeNO || data.trade_no);
+    }
+
+    // HTML Form 表单 跳转 (通常是支付宝 PC/Wap)
+    if (typeof data === 'string' && data.includes('<form')) {
+      return this.onFormSubmit(data);
+    }
+
+    // H5 跳转
+    if (data.url) {
+      window.location.href = data.url;
+      return { action: 'url_jump', url: data.url };
+    }
+
+    // PC 扫码
+    if (data.qrCodeUrl || data.qr_code) {
+      return { action: 'qrcode', code: data.qrCodeUrl || data.qr_code, original: data };
+    }
+
+    throw new Error('For Alipay HTML Form, please use FormInvoker instead.');
+  }
+
+  // 微信小程序支付
   private invokerWechatPay(data: any): Promise<any> {
     return new Promise((resolve) => {
       const onBridgeReady = () => {
@@ -84,33 +116,7 @@ export class WebInvoker implements PaymentInvoker {
     });
   }
 
-  // ==========================================
-  //  支付宝专用逻辑
-  // ==========================================
-  private async handleAlipay(data: any): Promise<any> {
-    const ua = navigator.userAgent.toLowerCase();
-    const isAlipayEnv = ua.indexOf('alipayclient') !== -1;
-
-    // JSAPI，只有 tradeNO 且在支付宝环境才走 JSAPI
-    if (isAlipayEnv && (data.tradeNO || data.trade_no)) {
-      await ScriptLoader.load('https://gw.alipayobjects.com/as/g/h5-lib/alipayjsapi/3.1.1/alipayjsapi.min.js');
-      return this.invokerAlipay(data.tradeNO || data.trade_no);
-    }
-
-    // H5 跳转
-    if (data.url) {
-      window.location.href = data.url;
-      return { action: 'url_jump', url: data.url };
-    }
-
-    // PC 扫码
-    if (data.qrCodeUrl || data.qr_code) {
-      return { action: 'qrcode', code: data.qrCodeUrl || data.qr_code, original: data };
-    }
-
-    throw new Error('For Alipay HTML Form, please use FormInvoker instead.');
-  }
-
+  // 支付宝小程序支付
   private invokerAlipay(tradeNO: string): Promise<any> {
     return new Promise((resolve) => {
       const invoke = () => {
@@ -126,5 +132,17 @@ export class WebInvoker implements PaymentInvoker {
         document.addEventListener('AlipayJSBridgeReady', invoke, false);
       }
     });
+  }
+
+  // 支付宝表单支付
+  private onFormSubmit(html: string): Promise<void> {
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    document.body.appendChild(div);
+    const form = div.querySelector('form');
+    if (form) {
+      form.submit();
+    }
+    return Promise.resolve();
   }
 }
