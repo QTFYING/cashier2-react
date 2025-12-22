@@ -15,10 +15,10 @@ export type PayPlatformType = 'wechat' | 'alipay' | 'unionpay' | 'other';
 export class InvokerFactory {
   /**
    * 自动感知环境，返回最合适的执行器
-   * @param channel
-   * @param type
+   * @param channel: 平台
+   * @param runtime: 运行环境
    */
-  static create(channel: PayPlatformType, runtime: InvokerType): PaymentInvoker {
+  static create(channel: PayPlatformType, runtime?: InvokerType): PaymentInvoker {
     // --- 1. 显式指定模式 (Explicit) ---
     if (runtime === 'uniapp') return new UniAppInvoker(channel);
     if (runtime === 'wechat-mini') return new WechatMiniInvoker(channel);
