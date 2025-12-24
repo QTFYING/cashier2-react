@@ -1,84 +1,65 @@
-import type { PaymentContextState } from '../types';
+import type { PayResult } from '../types';
 import { Poller } from '../utils/poller';
-import type { PaymentContext } from './payment-context';
+
+// 定义轮询的回调接口
+export interface PollingCallbacks {
+  // 每次查单后的状态变更（用于更新 loading 或提示）
+  onStatusChange?: (res: PayResult) => void;
+  // 最终成功
+  onSuccess?: (res: PayResult) => void;
+  // 最终失败
+  onFail?: (res: PayResult) => void;
+  // 轮询结束（无论成功失败或停止）
+  onFinished?: () => void;
+}
+
+// 定义查单任务的类型：一个返回 Promise<PayResult> 的函数
+export type PollingTask = () => Promise<PayResult>;
 
 export class PollingManager {
   private activePoller: Poller | null = null;
 
-  constructor(private context: PaymentContext) {}
+  // 构造函数变空了，不再需要注入 Context
+  constructor() {}
 
   /**
    * 启动轮询
-   * @param strategyName 策略名称
-   * @param orderId 订单号
+   * @param task 具体的查单任务 (由调用方封装好)
+   * @param callbacks 状态回调集合
+   * @param interval 轮询间隔 (ms)
    */
-  start(strategyName: string, orderId: string) {
-    // 1. 防御性清理
+  start(task: PollingTask, callbacks: PollingCallbacks, interval = 3000) {
+    // 1. 停止之前的轮询
     this.stop();
 
-    const strategy = this.context.getStrategy(strategyName);
-    if (!strategy) {
-      console.warn(`[PollingManager] Strategy "${strategyName}" not found.`);
-      return;
-    }
+    this.activePoller = new Poller({ interval });
 
-    console.log(`[PollingManager] Start polling for order: ${orderId}`);
-
-    // 2. 初始化轮询器
-    this.activePoller = new Poller({ interval: 3000 });
-
-    // 3. [关键] 恢复上下文状态 (Context Restoration)
-    // 从 Context 中读取上一次 execute 结束时保存的状态，防止数据断裂
-    const lastState = this.context.getLastContextState();
-
-    const ctx: PaymentContextState = {
-      context: this.context,
-      params: { orderId, amount: 0 }, // 轮询阶段参数可能不全，以 orderId 为主
-      state: { ...lastState }, // 继承之前的状态 (如 startTime)
-      currentStatus: 'pending',
-    };
-
-    // 4. 启动轮询任务
     this.activePoller
       .start(
+        // Task: 执行传入的纯函数
         async () => {
-          // Task: 查单
-          // Strategy 内部会使用注入的 HTTP 实例去请求
-          const res = await strategy.getPaySt(orderId);
-
-          // Update Context
-          ctx.currentStatus = res.status;
-          ctx.result = res;
-
-          // Trigger: 通知业务层 (Event)
-          this.context.emit('statusChange', { status: res.status, result: res });
-
-          // 使用 Context 暴露的公共方法触发 onStateChange
-          await this.context.driver.implant('onStateChange', ctx, res.status);
-
+          const res = await task();
+          // 触发过程回调
+          callbacks.onStatusChange?.(res);
           return res;
         },
         // Validator: 成功或失败时停止
         (res) => res.status === 'success' || res.status === 'fail',
       )
-      .then(async (finalResult) => {
-        // 5. 最终结算
-        ctx.result = finalResult;
-
+      .then((finalResult) => {
+        // 结算
         if (finalResult.status === 'success') {
-          this.context.emit('success', finalResult);
-          await this.context.driver.implant('onSuccess', ctx, finalResult);
+          callbacks.onSuccess?.(finalResult);
         } else {
-          this.context.emit('fail', finalResult);
-          await this.context.driver.implant('onFail', ctx, finalResult);
+          callbacks.onFail?.(finalResult);
         }
       })
       .catch((err) => {
         console.warn('[PollingManager] Polling stopped or failed:', err.message);
       })
-      .finally(async () => {
-        // 无论如何，触发完成钩子 (关闭 Loading 等)
-        await this.context.driver.implant('onCompleted', ctx);
+      .finally(() => {
+        // 触发结束回调
+        callbacks.onFinished?.();
       });
   }
 

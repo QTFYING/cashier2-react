@@ -6,24 +6,7 @@
 */
 import type { PayParams, PayResult } from '../types';
 import type { PaymentAdapter } from './payment-adapter';
-
-// 定义支付宝(统一收单接口)的数据结构
-export interface AlipayPayload {
-  subject: string;
-  out_trade_no: string;
-  total_amount: string;
-  /**
-   * 支付方式：
-   * QUICK_MSECURITY_PAY：APP 支付
-   * QUICK_WAP_WAY：手机网页支付
-   * FAST_INSTANT_TRADE_PAY：电脑网站支付
-   * FACE_TO_FACE_PAYMENT：当面付
-   */
-  product_code: 'QUICK_WAP_WAY' | 'QUICK_MSECURITY_PAY' | 'FAST_INSTANT_TRADE_PAY' | 'FACE_TO_FACE_PAYMENT'; // <--- 关键字段，决定了是 Wap 还是 App
-  body?: string;
-  // ... 其他参数
-  [key: string]: any;
-}
+import type { AlipayPayload } from './types';
 
 export class AlipayAdapter implements PaymentAdapter<AlipayPayload, any> {
   // 1. 校验逻辑下沉到 Adapter
@@ -57,8 +40,11 @@ export class AlipayAdapter implements PaymentAdapter<AlipayPayload, any> {
     // 支付宝有些端返回 resultCode，有些返回 resultStatus
     const code = rawResult?.resultCode || rawResult?.resultStatus;
 
-    // "9000" 代表支付成功
+    // 兼容非json格式的，如form表单、二维码等
+    if (!rawResult) return { status: 'pending', message: '等待支付中' };
+
     if (code === '9000') {
+      // "9000" 代表支付成功
       return { status: 'success', raw: rawResult };
     }
 

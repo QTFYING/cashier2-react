@@ -1,7 +1,8 @@
 import { AlipayCircleOutlined, WechatOutlined } from '@ant-design/icons';
-import { Alert, Button, Card, Divider, Form, QRCode, Radio, Result, Skeleton, Statistic, Tag, Typography } from 'antd';
+import { Alert, Button, Card, Divider, Form, message, Modal, QRCode, Radio, Result, Skeleton, Statistic, Tag, Typography } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import type { CreateOrderParams } from '../../api/payment';
+import { PayError } from '../../cashier2';
 import { useCashier } from '../../hooks';
 
 const STATUS_COLOR = {
@@ -56,7 +57,27 @@ const Payment: React.FC = () => {
       // 发起新支付时，重置过期标记
       setIsQrExpired(false);
     } catch (err) {
-      console.error('支付发起失败', err);
+      // 1. 如果是 PayError，利用增强能力处理
+      if (err instanceof PayError) {
+        // A. 静默处理：用户自己关掉的，什么都不用做
+        if (err.isSilent) {
+          message.warning('用户取消');
+          return;
+        }
+
+        // B. 可重试：显示“重试”按钮或 Toast
+        if (err.shouldRetry) {
+          message.error({ content: '网络有点卡，请重试' });
+          return;
+        }
+
+        // C. 致命错误：显示详细错误信息
+        Modal.error({ title: '支付失败', content: err.message });
+      } else {
+        // 2. 未知程序错误
+        console.error(err);
+        message.error('系统异常');
+      }
     }
   };
 

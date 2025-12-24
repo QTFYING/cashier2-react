@@ -23,8 +23,10 @@ export interface PayParams {
   amount: number; // 金额（建议统一单位：分）
   currency?: string; // 币种，默认 CNY
   description?: string; // 商品描述
-  // 扩展字段：用于透传某些渠道特有的参数
-  // 例如：微信可能需要 openid，支付宝可能需要 return_url
+  /**
+   * 扩展字段：用于透传某些渠道特有的参数
+   * 例如：微信可能需要 openid，支付宝可能需要 return_url
+   */
   extra?: Record<string, any>;
 }
 

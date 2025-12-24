@@ -13,41 +13,56 @@ export interface SDKConfig {
   debug?: boolean;
   http?: HttpClient; // 依赖注入
   invokerType?: InvokerType;
+  // 新增：允许直接传入策略和插件
+  strategies?: BaseStrategy[];
+  plugins?: PaymentPlugin[];
+  // 新增：是否启用默认插件
+  enableDefaultPlugins?: boolean;
 }
 
 export class PaymentContext extends EventBus {
-  // [核心] 1. 策略池
+  // 1. 策略池
   private strategies: Map<string, BaseStrategy> = new Map();
 
-  // [核心] 2. 插件池 (替代 Middlewares)
+  // 2. 插件池
   private plugins: PaymentPlugin[] = [];
 
-  // [核心] 3. HTTP 客户端 (依赖注入)
+  // 3. HTTP 客户端 (依赖注入)
   public readonly http: HttpClient;
 
-  // [新增] 轮询管理器 (组合模式)
-  private pollingManager: PollingManager;
+  // 4. 轮询管理器
+  private poller: PollingManager;
 
-  // 插件分发器
+  // 5. 插件驱动器
   public driver: PluginDriver;
 
-  // 通过谁拉起支付控件
+  // 6. 执行环境
   public readonly invokerType: SDKConfig['invokerType'];
 
-  // 存个上下文，防止在轮询等待期间数据丢失
+  // 7. 上下文快照
   private _lastContextState: Record<string, any> = {} as PaymentContextState;
+
+  // 8. 实例是否被销毁
+  private _isDestroyed = false;
 
   constructor(config: SDKConfig = {}) {
     super();
 
-    const { http, invokerType } = config ?? {};
+    const { http, invokerType, plugins = [], enableDefaultPlugins = true } = config;
+
+    // 初始化基础依赖
     this.http = http ?? createDefaultFetcher();
-    this.driver = new PluginDriver(this.plugins || []);
-    // 初始化轮询管理器，并将 this 传给它
-    this.pollingManager = new PollingManager(this);
     this.invokerType = invokerType;
-    // [关键] 注册内置的事件桥接插件
-    this.use(EventBridgePlugin);
+    this.poller = new PollingManager();
+    this.plugins = [...plugins];
+
+    // 处理插件
+    if (enableDefaultPlugins) {
+      const hasEventBridge = this.plugins.some((p) => p.name === 'EventBridgePlugin');
+      if (!hasEventBridge) this.use(EventBridgePlugin);
+    }
+
+    this.driver = new PluginDriver(this.plugins || []);
   }
 
   /**
@@ -67,6 +82,7 @@ export class PaymentContext extends EventBus {
    */
   use(plugin: PaymentPlugin): this {
     plugin.enforce === 'pre' ? this.plugins.unshift(plugin) : this.plugins.push(plugin);
+    this.driver = new PluginDriver(this.plugins);
     return this;
   }
 
@@ -135,12 +151,28 @@ export class PaymentContext extends EventBus {
    * 手动开启轮询
    * 实际逻辑委托给 pollingManager
    */
+  /**
+   * 手动开启轮询
+   * 这里负责“组装”任务和上下文
+   */
   public startPolling(strategyName: string, orderId: string) {
-    this.pollingManager.start(strategyName, orderId);
+    // 1. 获取策略 (依然由 Context 负责)
+    const strategy = this.strategies.get(strategyName);
+
+    if (!strategy) return;
+
+    // 2. 上下文 (Context Restoration)
+    const ctx = this.createPollingContext(orderId);
+
+    // 3. task 定义查单任务 (闭包)
+    const task = async () => await strategy.getPaySt(orderId);
+
+    // 4. 定义回调 (连接 EventBus 和 PluginDriver)
+    this.poller.start(task, this.createPollingCallbacks(ctx), 3000);
   }
 
   public stopPolling() {
-    this.pollingManager.stop();
+    this.poller.stop();
   }
 
   // --- 暴露给 PollingManager 的内部能力 (Internal APIs) ---
@@ -157,5 +189,61 @@ export class PaymentContext extends EventBus {
    */
   public getLastContextState(): Record<string, any> {
     return this._lastContextState;
+  }
+
+  // 创建轮询时的上下文快照
+  private createPollingContext(orderId: string): PaymentContextState {
+    const lastState = this.getLastContextState();
+    return {
+      context: this,
+      params: { orderId, amount: 0 },
+      state: { ...lastState },
+      currentStatus: 'pending',
+    };
+  }
+
+  //  轮询回调函数（Event, Plugin）收敛在这里，不污染主逻辑
+  private createPollingCallbacks(ctx: PaymentContextState) {
+    return {
+      onStatusChange: async (res: PayResult) => {
+        ctx.currentStatus = res.status;
+        ctx.result = res;
+        this.emit('statusChange', { status: res.status, result: res });
+        await this.driver.implant('onStateChange', ctx, res.status);
+      },
+      onSuccess: async (res: PayResult) => {
+        ctx.result = res;
+        this.emit('success', res);
+        await this.driver.implant('onSuccess', ctx, res);
+      },
+      onFail: async (res: PayResult) => {
+        ctx.result = res;
+        this.emit('fail', res);
+        await this.driver.implant('onFail', ctx, res);
+      },
+      onFinished: async () => {
+        await this.driver.implant('onCompleted', ctx);
+      },
+    };
+  }
+
+  public destroy(): void {
+    if (this._isDestroyed) return;
+
+    // 1. 停止一切正在进行的异步任务 (轮询)
+    this.stopPolling();
+
+    // 2. 清空事件总线 (EventBus)
+    this.clear();
+
+    // 3. 清空策略
+    this.strategies.clear();
+
+    // 4. 清空插件列表
+    this.plugins = [];
+
+    // 5. 清空上下文状态 & 标识位
+    this._lastContextState = {};
+    this._isDestroyed = true;
   }
 }
