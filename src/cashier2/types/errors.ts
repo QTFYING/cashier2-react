@@ -28,7 +28,21 @@ export enum PayErrorCode {
   PROVIDER_INTERNAL_ERROR = 'PROVIDER_INTERNAL_ERROR', // 微信/支付宝挂了
   API_FAIL = 'API_FAIL', // 检查参数或环境
 
-  // 6. 未知兜底
+  // --- 6. 插件类报错 ---
+
+  /**
+   * 场景：插件主动要求停止流程（比如 Auth 插件发现没登录，跳转去登录页了，剩下的支付流程不需要跑了）
+  // 处置：静默处理，不报错
+   */
+  PLUGIN_INTERRUPT = 'PLUGIN_INTERRUPT', // 插件中断流程
+
+  /**
+   * 场景：插件内部崩了（比如 Logger 插件写日志失败，或者参数校验插件发现参数不对）
+   * 处置：视情况抛出 Fatal 或 Warning
+   */
+  PLUGIN_ERROR = 'PLUGIN_ERROR',
+
+  // 7. 未知兜底
   UNKNOWN = 'UNKNOWN',
 }
 

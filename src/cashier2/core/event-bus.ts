@@ -1,4 +1,4 @@
-import type { PayParams, PayResult, PaySt } from '../types/protocol';
+import type { PayParams, PayResult, PaySt } from '../types';
 
 /**
  * 定义事件名与对应载荷(Payload)的映射关系

@@ -1,12 +1,11 @@
 import type { PayPlatformType } from '../core/invoker-factory';
 import { PayError } from '../core/payment-error';
-import { PayErrorCode, type PaymentInvoker } from '../types';
-import { AlipayWebHandler } from './web/alipay-handler';
-import { WebInvokerFactory } from './web/types';
-import { WechatWebHandler } from './web/wechat-handler';
+import { PayErrorCode, PaymentChannelEnum } from '../types';
+import { PaymentInvoker } from './types';
+import { AlipayWebHandler, WebInvokerFactory, WechatWebHandler } from './web';
 
-WebInvokerFactory.register('wechat', new WechatWebHandler());
-WebInvokerFactory.register('alipay', new AlipayWebHandler());
+WebInvokerFactory.register(PaymentChannelEnum.WE_CHAT, new WechatWebHandler());
+WebInvokerFactory.register(PaymentChannelEnum.ALI_PAY, new AlipayWebHandler());
 
 export class WebInvoker implements PaymentInvoker {
   constructor(private channel: PayPlatformType = 'other') {}

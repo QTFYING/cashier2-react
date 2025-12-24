@@ -1,7 +1,6 @@
 import { WechatAdapter } from '../adapters';
 import { InvokerFactory } from '../core/invoker-factory';
-import type { SDKConfig } from '../core/payment-context';
-import type { HttpClient, PayParams, PayResult } from '../types';
+import { PaymentChannelEnum, SDKConfig, type HttpClient, type PayParams, type PayResult } from '../types';
 import { Poller } from '../utils/poller';
 import { BaseStrategy } from './base-strategy';
 
@@ -20,7 +19,7 @@ type WechatResponse =
 export class WechatStrategy extends BaseStrategy<WechatConfig> {
   private adapter = new WechatAdapter();
 
-  public readonly name = 'wechat';
+  public readonly name = PaymentChannelEnum.WE_CHAT;
   private startTime = Date.now();
 
   /**

@@ -1,24 +1,12 @@
 import { EventBridgePlugin } from '../plugins/event-bridge-plugin';
 import type { BaseStrategy } from '../strategies/base-strategy';
-import type { HttpClient, PaymentContextState, PaymentPlugin, PayParams, PayResult } from '../types';
+import type { HttpClient, PaymentContextState, PaymentPlugin, PayParams, PayResult, SDKConfig } from '../types';
 import { PayErrorCode } from '../types';
 import { createDefaultFetcher } from '../utils/fetcher';
 import { EventBus } from './event-bus';
-import type { InvokerType } from './invoker-factory';
 import { PayError } from './payment-error';
 import { PluginDriver } from './plugin-driver';
 import { PollingManager } from './polling-manager';
-
-export interface SDKConfig {
-  debug?: boolean;
-  http?: HttpClient; // 依赖注入
-  invokerType?: InvokerType;
-  // 新增：允许直接传入策略和插件
-  strategies?: BaseStrategy[];
-  plugins?: PaymentPlugin[];
-  // 新增：是否启用默认插件
-  enableDefaultPlugins?: boolean;
-}
 
 export class PaymentContext extends EventBus {
   // 1. 策略池

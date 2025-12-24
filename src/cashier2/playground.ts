@@ -1,7 +1,7 @@
 import { PaymentContext } from './core/payment-context';
 import { AlipayStrategy, MockStrategy, WechatStrategy } from './strategies';
 import { StripeStrategy } from './stripe-strategy';
-import { PayErrorCode, type PaymentPlugin } from './types';
+import { PayErrorCode, PaymentChannelEnum, type PaymentPlugin } from './types';
 
 async function main() {
   // 1. 初始化 Context (必须注入 HTTP 实例)
@@ -79,7 +79,7 @@ async function main() {
     console.log('\n------ 🚀 开始支付流程 ------\n');
 
     // 确定支付方式
-    const result = await cashier.execute('wechat', {
+    const result = await cashier.execute(PaymentChannelEnum.WE_CHAT, {
       orderId: 'ORDER_2025_001',
       amount: 100,
       description: 'Premium Subscription',
@@ -92,7 +92,7 @@ async function main() {
       console.log('\n⏳ 最终结果: 等待用户扫码...');
 
       // 模拟: 如果是扫码模式，手动开启轮询
-      cashier.startPolling('wechat', 'ORDER_2025_001');
+      cashier.startPolling(PaymentChannelEnum.WE_CHAT, 'ORDER_2025_001');
     }
   } catch (err: any) {
     // 统一错误处理

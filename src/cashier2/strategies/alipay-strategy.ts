@@ -1,8 +1,6 @@
 import { AlipayAdapter } from '../adapters';
 import { InvokerFactory } from '../core/invoker-factory';
-import type { SDKConfig } from '../core/payment-context';
-import type { HttpClient } from '../types';
-import type { PayParams, PayResult } from '../types/protocol';
+import type { HttpClient, PayParams, PayResult, SDKConfig } from '../types';
 import { BaseStrategy } from './base-strategy';
 
 type AlipayResponse =

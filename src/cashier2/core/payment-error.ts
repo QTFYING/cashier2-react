@@ -24,6 +24,7 @@ export class PayError extends Error {
   private determineCategory(code: PayErrorCode): ErrorCategory {
     switch (code) {
       case PayErrorCode.USER_CANCEL:
+      case PayErrorCode.PLUGIN_INTERRUPT:
         return ErrorCategory.SILENT;
 
       case PayErrorCode.TIMEOUT:
@@ -39,6 +40,7 @@ export class PayError extends Error {
       case PayErrorCode.INVALID_CONFIG:
       case PayErrorCode.NOT_SUPPORTED:
       case PayErrorCode.SIGNATURE_FAILED:
+      case PayErrorCode.PLUGIN_ERROR:
         return ErrorCategory.FATAL;
 
       default:
