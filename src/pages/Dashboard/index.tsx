@@ -1,32 +1,34 @@
-import { DollarCircleOutlined, ShoppingCartOutlined, UserOutlined } from '@ant-design/icons';
-import { Card, Col, Row, Statistic } from 'antd';
-import React from 'react';
+import { Card } from 'antd';
+import { A1 } from './a-1';
+import { A2 } from './a-2';
+import { B1 } from './b-1';
+import { B2 } from './b-2';
+import { C1 } from './c-1';
+import { C2 } from './c-2';
+import { C3 } from './c-3';
+import { Provider } from './context/provider';
 
-const Dashboard: React.FC = () => {
+const Dashboard = () => {
   return (
     <div>
       <h2 className="mb-6">Dashboard</h2>
-      <Row gutter={16}>
-        <Col span={8}>
-          <Card>
-            <Statistic title="Total Transactions" value={112893} prefix={<DollarCircleOutlined />} />
-          </Card>
-        </Col>
-        <Col span={8}>
-          <Card>
-            <Statistic title="Daily Orders" value={1234} prefix={<ShoppingCartOutlined />} />
-          </Card>
-        </Col>
-        <Col span={8}>
-          <Card>
-            <Statistic title="Active Users" value={93} prefix={<UserOutlined />} />
-          </Card>
-        </Col>
-      </Row>
 
-      <Card title="Recent Activity" className="mt-6">
-        <p>System operational.</p>
-        <p>Payment gateway status: Online</p>
+      <Provider>
+        <Card title="Context" className="mt-6">
+          <A1 />
+          <A2 />
+        </Card>
+      </Provider>
+
+      <Card title="Zustand" className="mt-6">
+        <B1 />
+        <B2 />
+      </Card>
+
+      <Card title="Jotai" className="mt-6">
+        <C1 />
+        <C2 />
+        <C3 />
       </Card>
     </div>
   );
