@@ -5,9 +5,9 @@ interface ScriptAttributes {
 }
 
 export class ScriptLoader {
+  private constructor() {}
+
   // 核心缓存：Key 是 URL，Value 是加载过程的 Promise
-  // 使用 Promise 缓存可以完美解决并发加载问题：
-  // 即使同时调用 10 次 load('stripe.js')，网络请求也只会发一次。
   private static cache: Map<string, Promise<void>> = new Map();
 
   /**
@@ -21,8 +21,9 @@ export class ScriptLoader {
       return this.cache.get(src)!;
     }
 
-    // 2. 也是一种缓存检查：防止页面上原本就已经有了这个 script 标签
-    if (document.querySelector(`script[src="${src}"]`)) {
+    // 2. 也是一种缓存检查：防止页面上原本就已经有了这个 script 标签 (比如服务端渲染或其他 Loader 加载的)
+    const existingScript = document.querySelector(`script[src="${src}"]`);
+    if (existingScript) {
       const promise = Promise.resolve();
       this.cache.set(src, promise);
       return promise;
@@ -38,7 +39,7 @@ export class ScriptLoader {
       script.async = attrs.async !== false; // 默认 async
       script.defer = attrs.defer || false;
 
-      // 注入其他自定义属性 (比如 PayPal 需要 data-namespace)
+      // 注入其他自定义属性
       Object.keys(attrs).forEach((key) => {
         if (key !== 'async' && key !== 'defer') {
           script.setAttribute(key, attrs[key]);
@@ -67,5 +68,35 @@ export class ScriptLoader {
     return promise;
   }
 
-  public logger() {}
+  /**
+   * [新增] 卸载特定脚本
+   * 场景：脚本加载失败需要重试、或者组件卸载时清理资源
+   * 动作：清除缓存 + 移除 DOM 节点
+   */
+  static unload(src: string) {
+    // 1. 清除 Promise 缓存
+    if (this.cache.has(src)) {
+      this.cache.delete(src);
+    }
+
+    // 2. 移除 DOM 节点 (确保下次 load 是干净的重试)
+    const script = document.querySelector(`script[src="${src}"]`);
+    if (script) {
+      script.remove();
+    }
+  }
+
+  /**
+   * [新增] 重置所有缓存
+   * 场景：页面长期运行后清理内存，或者用户登出时重置状态
+   * 动作：仅清除 Map 缓存，保留 DOM (防止破坏正在运行的全局变量)
+   */
+  static clear() {
+    this.cache.clear();
+  }
+
+  static logger() {
+    // 简单的调试辅助
+    console.log('[ScriptLoader] Current Cache:', ScriptLoader.cache.keys());
+  }
 }

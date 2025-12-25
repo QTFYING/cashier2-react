@@ -1,5 +1,4 @@
-import { PaymentContext } from './core/payment-context';
-import { AlipayStrategy, MockStrategy, WechatStrategy } from './strategies';
+import { AlipayStrategy, PaymentContext, WechatStrategy } from './index';
 import { StripeStrategy } from './stripe-strategy';
 import { PayErrorCode, PaymentChannelEnum, type PaymentPlugin } from './types';
 
@@ -10,8 +9,7 @@ async function main() {
   cashier
     .register(new WechatStrategy({ appId: 'wx888888', mchId: '123456' }))
     .register(new AlipayStrategy({ appId: '2021000000', privateKey: '...' }))
-    .register(new StripeStrategy({ appId: '2021000000', privateKey: '...' }))
-    .register(new MockStrategy({}));
+    .register(new StripeStrategy({ appId: '2021000000', privateKey: '...' }));
 
   // --- 3. 定义并注册插件 (Plugins) ---
 

@@ -1,7 +1,7 @@
 import type { PayPlatformType } from '../core/invoker-factory';
 import { PayError } from '../core/payment-error';
 import { PayErrorCode, PaymentChannelEnum } from '../types';
-import { PaymentInvoker } from './types';
+import type { PaymentInvoker } from './types';
 import { AlipayWebHandler, WebInvokerFactory, WechatWebHandler } from './web';
 
 WebInvokerFactory.register(PaymentChannelEnum.WE_CHAT, new WechatWebHandler());

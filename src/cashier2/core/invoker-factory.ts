@@ -1,6 +1,6 @@
 import { WebInvoker } from '../invokers';
 import { AlipayMiniInvoker } from '../invokers/alipay-mini-invoker';
-import { PaymentInvoker } from '../invokers/types';
+import type { PaymentInvoker } from '../invokers/types';
 import { UniAppInvoker } from '../invokers/uni-invoker';
 import { WechatMiniInvoker } from '../invokers/wechat-mini-invoker';
 
@@ -84,7 +84,7 @@ export class InvokerFactory {
           // 调试模式下可以打印：console.log(`[InvokerFactory] Auto-detected: ${item.type}`);
           return new item.InvokerClass(channel);
         }
-      } catch (e) {
+      } catch {
         // 忽略探测过程中的报错 (防止访问未定义全局变量抛错)
         continue;
       }

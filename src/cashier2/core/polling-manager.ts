@@ -19,9 +19,6 @@ export type PollingTask = () => Promise<PayResult>;
 export class PollingManager {
   private activePoller: Poller | null = null;
 
-  // 构造函数变空了，不再需要注入 Context
-  constructor() {}
-
   /**
    * 启动轮询
    * @param task 具体的查单任务 (由调用方封装好)

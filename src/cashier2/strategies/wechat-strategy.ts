@@ -1,6 +1,6 @@
 import { WechatAdapter } from '../adapters';
 import { InvokerFactory } from '../core/invoker-factory';
-import { PaymentChannelEnum, SDKConfig, type HttpClient, type PayParams, type PayResult } from '../types';
+import { PaymentChannelEnum, type HttpClient, type PayParams, type PayResult, type SDKConfig } from '../types';
 import { Poller } from '../utils/poller';
 import { BaseStrategy } from './base-strategy';
 

@@ -3,6 +3,7 @@ import type { BaseStrategy } from '../strategies/base-strategy';
 import type { HttpClient, PaymentContextState, PaymentPlugin, PayParams, PayResult, SDKConfig } from '../types';
 import { PayErrorCode } from '../types';
 import { createDefaultFetcher } from '../utils/fetcher';
+import { ScriptLoader } from '../utils/script-loader';
 import { EventBus } from './event-bus';
 import { PayError } from './payment-error';
 import { PluginDriver } from './plugin-driver';
@@ -229,6 +230,8 @@ export class PaymentContext extends EventBus {
 
     // 4. 清空插件列表
     this.plugins = [];
+
+    ScriptLoader.clear();
 
     // 5. 清空上下文状态 & 标识位
     this._lastContextState = {};

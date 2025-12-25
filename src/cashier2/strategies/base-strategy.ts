@@ -1,5 +1,5 @@
 import type { HttpClient, PayParams, PayResult, PaySt, SDKConfig } from '../types';
-import { StrategyOptions } from '../types/protocol';
+import type { StrategyOptions } from '../types/protocol';
 
 export type StateCallBack = (status: PaySt) => void;
 

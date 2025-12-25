@@ -10,7 +10,6 @@ export class StripeStrategy extends BaseStrategy {
     // 这样自动带上了 Token，也不用自己处理 fetch
     try {
       // 假设 Stripe 需要先在后端创建 PaymentIntent
-      console.log('xxxx-1', this.context);
       const intent = await this.context.request('post', '/api/stripe/create-intent', {
         amount: params.amount,
         currency: params.currency,
@@ -18,7 +17,7 @@ export class StripeStrategy extends BaseStrategy {
 
       // 【修正】调用 Stripe 官方的前端 SDK (这里假设已经通过 ScriptLoader 加载了)
       // 或者使用 InvokerFactory 拿到的执行器
-      const { error, paymentIntent } = await window.Stripe(this.config.key).confirmCardPayment(intent.client_secret);
+      const { error, paymentIntent } = await (window as any).Stripe(this.config.key).confirmCardPayment(intent.client_secret);
 
       if (error) {
         // 使用标准错误类
