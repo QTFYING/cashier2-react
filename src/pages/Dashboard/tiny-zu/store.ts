@@ -1,4 +1,5 @@
-import { create, createWithMiddleware, immerMiddleware, loggerMiddleware, persistMiddleware, shallowEqual } from '../../../utils';
+import { immerMiddleware, loggerMiddleware, persistMiddleware } from '../../../middlewares/middlewares';
+import { create, createWithMiddleware, shallowEqual } from '../../../utils';
 
 type MyState = {
   count: number;
@@ -26,7 +27,7 @@ export const useZuStore = createWithMiddleware<MyState>(
 
 // 订阅某个 selector 的变化
 (useMyStore as any).subscribeWithSelector(
-  (s) => ({ count: s.count, text: s.text }),
+  (s) => ({ count: s.count + 1, text: s.text }),
   () => {
     console.log('count 或 text 变化了');
   },
