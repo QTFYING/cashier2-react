@@ -1,4 +1,4 @@
-import { create } from '../../../utils';
+import { create, shallowEqual } from '../../../utils';
 
 type MyState = {
   count: number;
@@ -13,3 +13,5 @@ export const useMyStore = create<MyState>((set, _get) => ({
   inc: () => set((s) => ({ ...s, count: s.count + 1 })),
   setText: (t: string) => set({ text: t }),
 }));
+
+export { shallowEqual };

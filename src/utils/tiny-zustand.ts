@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useRef, useSyncExternalStore } from 'react';
 
 type StateUpdater<S> = Partial<S> | ((prev: S) => S);
 type Subscriber = () => void;
@@ -59,29 +59,33 @@ export function create<S extends object>(stateCreator: StateCreator<S>) {
   }
 
   /**
-   * subscribeSelector: 支持 selector + equality 的订阅包装
-   * 当底层 state 变化时，只有 selector(getState()) 的结果发生变化才触发 listener
-   */
-  const subscribeSelector = <T>(selector: (s: S) => T, listener: Subscriber, equality: (a: T, b: T) => boolean = Object.is): Unsubscribe => {
-    let prev = selector(state);
-    return subscribe(() => {
-      const next = selector(state);
-      if (!equality(prev, next)) {
-        prev = next;
-        listener();
-      }
-    });
-  };
-
-  /**
    * useStore Hook
    * - selector: 选择器，默认返回整个 state
    * - equality: 比较函数，默认严格相等（Object.is），常用 shallowEqual
    */
   function useStore<T = S>(selector: (s: S) => T = ((s: S) => s) as any, equality: (a: T, b: T) => boolean = Object.is) {
-    const getSnapshot = () => selector(getState());
-    const subscribeSnapshot = (cb: () => void) => subscribeSelector(selector, cb, equality);
-    return useSyncExternalStore(subscribeSnapshot, getSnapshot, getSnapshot);
+    const lastSnapshot = useRef<T>(undefined as unknown as T);
+    const lastInit = useRef(false);
+
+    const getSnapshot = () => {
+      const nextState = getState();
+      const nextSelected = selector(nextState);
+
+      if (!lastInit.current) {
+        lastSnapshot.current = nextSelected;
+        lastInit.current = true;
+        return nextSelected;
+      }
+
+      if (equality(lastSnapshot.current, nextSelected)) {
+        return lastSnapshot.current;
+      }
+
+      lastSnapshot.current = nextSelected;
+      return nextSelected;
+    };
+
+    return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
   }
 
   // 把 api 挂到 useStore 上，方便外部直接调用 useStore.getState() 等
