@@ -8,6 +8,7 @@ import { C2 } from './c-2';
 import { C3 } from './c-3';
 import { Provider } from './context/provider';
 import { D1 } from './d-1';
+import { D2 } from './d-2';
 
 const Dashboard = () => {
   return (
@@ -34,6 +35,7 @@ const Dashboard = () => {
 
       <Card title="Tiny-Zustand" className="mt-6">
         <D1 />
+        <D2 />
       </Card>
     </div>
   );
