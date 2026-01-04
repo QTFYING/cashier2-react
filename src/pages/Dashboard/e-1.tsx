@@ -1,9 +1,9 @@
 import { Button, Space } from 'antd';
 import { tinyAtom, useMyAtom } from '../../utils/tiny-jotai';
 
-export function E1() {
-  const countAtom = tinyAtom(0);
+const countAtom = tinyAtom(0);
 
+export function E1() {
   console.log('E1 render...');
 
   const [count, setCount] = useMyAtom(countAtom);
