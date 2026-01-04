@@ -1,7 +1,6 @@
 import { Button, Space } from 'antd';
-import { tinyAtom, useMyAtom } from '../../utils/tiny-jotai';
-
-const countAtom = tinyAtom(0);
+import { useMyAtom } from '../../utils/tiny-jotai';
+import { countAtom } from './tiny-jotai/store';
 
 export function E1() {
   console.log('E1 render...');

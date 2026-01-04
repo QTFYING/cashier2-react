@@ -39,7 +39,7 @@ const Dashboard = () => {
         <D2 />
       </Card>
 
-      <Card title="Tiny-Zustand" className="mt-6">
+      <Card title="Tiny-Jotai" className="mt-6">
         <E1 />
       </Card>
     </div>
