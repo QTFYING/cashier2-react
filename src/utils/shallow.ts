@@ -1,3 +1,8 @@
+/**
+ * 浅比较
+ * shallow:  https://github.com/pmndrs/zustand/blob/main/src/vanilla/shallow.ts
+ * useShallow: https://github.com/pmndrs/zustand/blob/main/src/react/shallow.ts
+ */
 const isIterable = (obj: object): obj is Iterable<unknown> => Symbol.iterator in obj;
 
 const hasIterableEntries = (
