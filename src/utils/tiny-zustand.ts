@@ -70,6 +70,7 @@ export function create<S extends object>(stateCreator: StateCreator<S>) {
 
   // 初始化 state（stateCreator 可以返回初始 state）
   const initial = stateCreator(setState, getState, api);
+
   if (initial && typeof initial === 'object') {
     state = { ...state, ...initial } as S;
   }
