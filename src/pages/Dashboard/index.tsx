@@ -10,6 +10,7 @@ import { Provider } from './context/provider';
 import { D1 } from './d-1';
 import { D2 } from './d-2';
 import { E1 } from './e-1';
+import F1 from './f-1';
 
 const Dashboard = () => {
   return (
@@ -41,6 +42,10 @@ const Dashboard = () => {
 
       <Card title="Tiny-Jotai" className="mt-6">
         <E1 />
+      </Card>
+
+      <Card title="Tiny-Valtio" className="mt-6">
+        <F1 />
       </Card>
     </div>
   );
