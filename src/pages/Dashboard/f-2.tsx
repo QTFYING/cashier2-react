@@ -1,5 +1,5 @@
 import { Button, Space, Typography } from 'antd';
-import { proxy, useSnapshot } from 'valtio';
+import { proxy, useSnapshot } from '../../utils/tiny-valtio';
 
 const { Title } = Typography;
 
