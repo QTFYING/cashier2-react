@@ -21,7 +21,7 @@ const Payment: React.FC = () => {
 
   // 交互状态控制
   const [isCreated, setCreatedSt] = useState(false);
-
+  const [showLateComponent, setShowLateComponent] = useState(false);
   // 用于控制二维码过期视觉状态
   const [isQrExpired, setIsQrExpired] = useState(false);
 
@@ -51,6 +51,10 @@ const Payment: React.FC = () => {
         wechat: { extra: { body: '测试商品', tradeType: 'NATIVE' } },
         alipay: { extra: { subject: '测试商品', mode: 'pc' } },
       };
+
+      // 演示：点击支付后，延迟 2秒 挂载
+      setTimeout(() => setShowLateComponent(true), 20000);
+
       const payload = { ...base, orderId, ...(extraMap[channel] || {}) };
       await pay(values.channel, payload);
 
@@ -249,6 +253,65 @@ const Payment: React.FC = () => {
           )}
         </div>
       </Card>
+
+      {showLateComponent && <LateSubscriber />}
+    </div>
+  );
+};
+
+// --- 教学演示组件：模拟只用 EventBus 的“后知后觉” ---
+// 这个组件只监听 emit，不读取 current state
+const LateSubscriber: React.FC = () => {
+  // 正确写法：从 hook 中获取响应式状态
+  const { cashier, status } = useCashier();
+  const [localStatus, setLocalStatus] = useState('idle');
+
+  useEffect(() => {
+    console.log('👀 [LateComponent] 我挂载了，开始监听事件...');
+
+    // 纯 EventBus 写法：只听事件
+    const onStart = () => {
+      console.log('👂 [LateComponent] 听到 start 事件');
+      setLocalStatus('processing');
+    };
+    const onSuccess = () => setLocalStatus('success');
+
+    // cashier.on('start', onStart); // SDK 没有 start 事件，通常是 statusChange
+    cashier.on('statusChange', (p: any) => {
+      if (p.status === 'processing' || p.status === 'pending') onStart();
+    });
+
+    cashier.on('success', onSuccess);
+
+    return () => {
+      // cleanup
+    };
+  }, [cashier]);
+
+  return (
+    <div className="mt-4 p-4 border border-red-500 bg-red-50 rounded">
+      <Typography.Title level={5} type="danger">
+        我是后知后觉的组件 (EventBus Mode)
+      </Typography.Title>
+      <div className="text-gray-600 mb-2">
+        我延迟了 2秒 才出现。
+        <br />
+        因为我只监听事件(Event)，而支付开始的事件在 2秒前 已经发完了。
+        <br />
+        <b>所以我完全不知道现在正在支付中！</b>
+      </div>
+      <div className="flex gap-4">
+        <div className="flex-1 font-bold border border-red-200 bg-red-100 p-2 rounded">
+          EventBus 视角 (事件): <br />
+          <span className="text-red-600">
+            {localStatus} - {status}
+          </span>
+        </div>
+        <div className="flex-1 font-bold border border-green-200 bg-green-100 p-2 rounded">
+          Reactive 视角 (状态): <br />
+          <span className="text-green-600">{status} (✅ 正确)</span>
+        </div>
+      </div>
     </div>
   );
 };
