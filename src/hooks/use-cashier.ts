@@ -1,8 +1,9 @@
-import { useCallback, useContext, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import type { PayParams, PayResult } from '../cashier2';
 import { CashierContext } from './cashier-context';
 import { PaymentStatusEnum } from './enums';
 import type { UseCashierOptions } from './types';
+import { useStore } from './use-store';
 
 export function useCashier(options: UseCashierOptions = {}) {
   const context = useContext(CashierContext);
@@ -17,44 +18,24 @@ export function useCashier(options: UseCashierOptions = {}) {
   // Ref 保持引用，避免 useEffect 依赖地狱
   const optionsRef = useRef(options);
 
-  // --- 1. 订阅 Store 更新 Using useSyncExternalStore ---
-  const subscribe = useCallback(
-    (callback: () => void) => {
-      // 适配: Store expect (state) => void, but generic subscriber expects () => void
-      // We ignore the state arg because we just need to trigger a re-render
-      return cashier.store.subscribe(() => callback());
-    },
-    [cashier],
-  );
+  // --- 1. 订阅 Store 更新 ---
+  // 使用封装好的 hook，让代码看起来更“傻瓜式”
+  const storeState = useStore(cashier.store);
 
-  const getSnapshot = useCallback(() => {
-    return cashier.store.getState();
-  }, [cashier]);
-
-  // 使用 useSyncExternalStore 代替手动维护的 setState
-  // 注意：需要 React 18+
-  const storeState = useSyncExternalStore(subscribe, getSnapshot);
-
-  // Computed/Derived State (在 render 中计算，保证总是由 snapshot 驱动)
   const isProcess = storeState.status === 'processing' || storeState.status === 'pending';
 
   const state = {
-    // 统一 loading 状态：网络请求中 或 业务处理中
     loading: storeState.loading || isProcess,
-    status: storeState.status === 'idle' ? null : storeState.status,
+    status: storeState.status || null,
     result: storeState.result || null,
     error: (storeState.error as any) || null,
     action: storeState.result?.action || null,
   };
 
-  // 事件监听仅需保持引用，不需要触发 render，所以可以简单处理或分离
-  // 由于原逻辑中 options 回调是在 useEffect 中绑定的，我们可以保持这一部分，
-  // 或者将其移到独立的 useEffect 中，仅负责 EventBus -> callback 的桥接
   useEffect(() => {
     optionsRef.current = options;
     if (!cashier) return;
 
-    // 事件转发 (EventBus -> User Options)
     const handleSuccess = (res: PayResult) => optionsRef.current?.onSuccess?.(res);
     const handleFail = (err: any) => optionsRef.current?.onError?.(err);
     const handleStatusChange = (payload: { status: string; result?: any }) => {
