@@ -1,5 +1,6 @@
 // 导出核心类
-export { PaymentContext } from './core/payment-context';
+export { Store } from './core/cashier-store';
+export { PaymentContext, type PaymentState } from './core/payment-context';
 
 // 导出 Invoker 工厂,用户可自行注册Invoker，如·：uni.requestPayment
 export { InvokerFactory } from './core/invoker-factory';

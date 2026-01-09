@@ -1,13 +1,22 @@
 import { EventBridgePlugin } from '../plugins/event-bridge-plugin';
 import type { BaseStrategy } from '../strategies/base-strategy';
 import type { HttpClient, PaymentContextState, PaymentPlugin, PayParams, PayResult, SDKConfig } from '../types';
-import { PayErrorCode } from '../types';
+import { PayErrorCode, PaySt } from '../types';
 import { createDefaultFetcher } from '../utils/fetcher';
 import { ScriptLoader } from '../utils/script-loader';
+import { Store } from './cashier-store';
 import { EventBus } from './event-bus';
 import { PayError } from './payment-error';
 import { PluginDriver } from './plugin-driver';
 import { PollingManager } from './polling-manager';
+
+// 9. 状态管理 (PaymentState definition)
+export interface PaymentState {
+  status: PaySt | 'idle';
+  result?: PayResult;
+  loading: boolean;
+  error?: Error;
+}
 
 export class PaymentContext extends EventBus {
   // 1. 策略池
@@ -28,6 +37,14 @@ export class PaymentContext extends EventBus {
   // 6. 执行环境
   public readonly invokerType: SDKConfig['invokerType'];
 
+  // 9. 状态管理 (Store)
+  public readonly store: Store<PaymentState>;
+
+  // 兼容旧代码的 getter，指向 store.getState()
+  public get state(): PaymentState {
+    return this.store.getState();
+  }
+
   // 7. 上下文快照
   private _lastContextState: Record<string, any> = {} as PaymentContextState;
 
@@ -44,6 +61,12 @@ export class PaymentContext extends EventBus {
     this.invokerType = invokerType;
     this.poller = new PollingManager();
     this.plugins = [...plugins];
+
+    // Initialize Store
+    this.store = new Store<PaymentState>({
+      status: 'idle',
+      loading: false,
+    });
 
     // 处理插件
     if (enableDefaultPlugins) {
@@ -85,6 +108,7 @@ export class PaymentContext extends EventBus {
     }
 
     // 0. 初始化运行时上下文
+    this.updateState({ loading: true, error: undefined, status: 'idle', result: undefined });
     const ctx: PaymentContextState = { context: this, params, state: {} };
 
     try {
@@ -111,10 +135,13 @@ export class PaymentContext extends EventBus {
       // Stage 5: Settlement
       if (result.status === 'success') {
         await this.driver.implant('onSuccess', ctx, result);
+        this.updateState({ status: 'success', loading: false, result });
       } else if (result.status === 'pending' || result.status === 'processing') {
         await this.driver.implant('onStateChange', ctx, result);
+        this.updateState({ status: result.status, loading: false, result });
       } else {
         await this.driver.implant('onFail', ctx, result);
+        this.updateState({ status: 'fail', loading: false, result });
       }
 
       // [关键] 成功返回前，存档！
@@ -125,11 +152,13 @@ export class PaymentContext extends EventBus {
       const errResult = error instanceof PayError ? error : new PayError(PayErrorCode.UNKNOWN, error.message || 'Unknown Error');
 
       await this.driver.implant('onFail', ctx, errResult);
+      this.updateState({ status: 'fail', error: errResult, loading: false });
 
       // [关键] 出错也要存档
       this._lastContextState = ctx.state;
       throw errResult;
     } finally {
+      this.updateState({ loading: false });
       await this.driver.implant('onCompleted', ctx);
     }
   }
@@ -196,24 +225,40 @@ export class PaymentContext extends EventBus {
     return {
       onStatusChange: async (res: PayResult) => {
         ctx.currentStatus = res.status;
-        ctx.result = res;
-        this.emit('statusChange', { status: res.status, result: res });
+
+        // Merge with previous result to preserve QR code (Action) if polling response is partial
+        const prev = this.store.getState().result;
+        const merged = { ...prev, ...res };
+
+        ctx.result = merged;
+        this.emit('statusChange', { status: res.status, result: merged });
         await this.driver.implant('onStateChange', ctx, res.status);
+        this.updateState({ status: res.status, result: merged });
       },
       onSuccess: async (res: PayResult) => {
         ctx.result = res;
         this.emit('success', res);
         await this.driver.implant('onSuccess', ctx, res);
+        this.updateState({ status: 'success', loading: false, result: res });
       },
       onFail: async (res: PayResult) => {
         ctx.result = res;
         this.emit('fail', res);
         await this.driver.implant('onFail', ctx, res);
+        this.updateState({ status: 'fail', loading: false, result: res });
       },
       onFinished: async () => {
         await this.driver.implant('onCompleted', ctx);
+        this.updateState({ loading: false });
       },
     };
+  }
+
+  /**
+   * 内部状态更新助手
+   */
+  private updateState(patch: Partial<PaymentState>) {
+    this.store.setState(patch);
   }
 
   public destroy(): void {
