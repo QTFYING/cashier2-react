@@ -34,6 +34,9 @@ export function useCashier(options: UseCashierOptions = {}) {
 
   useEffect(() => {
     optionsRef.current = options;
+  }, [options]);
+
+  useEffect(() => {
     if (!cashier) return;
 
     const handleSuccess = (res: PayResult) => optionsRef.current?.onSuccess?.(res);
@@ -51,7 +54,7 @@ export function useCashier(options: UseCashierOptions = {}) {
       cashier.off('fail', handleFail);
       cashier.off('statusChange', handleStatusChange);
     };
-  }, [cashier, options]);
+  }, [cashier]);
 
   // --- 2. 核心支付动作 (负责处理 同步/主动 反馈) ---
   // 场景：点击支付按钮 -> loading -> 拿到二维码/跳转链接
@@ -65,27 +68,30 @@ export function useCashier(options: UseCashierOptions = {}) {
   );
 
   // --- 3. reset 状态 ---
-  const reset = () => {
+  const reset = useCallback(() => {
     // 必须调用 store 的方法来重置，而不是本地 setState
     cashier.store.setState({ loading: false, status: 'idle', result: undefined, error: undefined });
-  };
+  }, [cashier]);
 
   // --- 4. 上下游场景：退款 ---
   const refund = useCallback(() => {}, []);
 
   // --- 5. 上下游场景：创建订单 ---
-  const create = async (params: any) => {
-    try {
-      // 复用 Store 的 loading 状态
-      cashier.store.setState({ loading: true });
-      // 建议hooks中的http请求全部读取context中的http实例
-      const { orderId } = await cashier.http.post('/payment/create', params);
-      setOrderId(orderId);
-      return orderId;
-    } finally {
-      cashier.store.setState({ loading: false });
-    }
-  };
+  const create = useCallback(
+    async (params: any) => {
+      try {
+        // 复用 Store 的 loading 状态
+        cashier.store.setState({ loading: true });
+        // 建议hooks中的http请求全部读取context中的http实例
+        const { orderId } = await cashier.http.post('/payment/create', params);
+        setOrderId(orderId);
+        return orderId;
+      } finally {
+        cashier.store.setState({ loading: false });
+      }
+    },
+    [cashier],
+  );
 
   return {
     // 基础状态
