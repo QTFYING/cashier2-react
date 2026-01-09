@@ -27,6 +27,7 @@ export type PaymentChannel = 'wechat' | 'alipay' | 'stripe' | 'custom';
  * 业务层调用 SDK 时只需要关注这些字段
  */
 export interface PayParams {
+  autoPoll?: boolean; // 是否自动轮询
   orderId: string; // 你的业务侧订单号
   amount: number; // 金额（建议统一单位：分）
   currency?: string; // 币种，默认 CNY

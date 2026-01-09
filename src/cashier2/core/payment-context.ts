@@ -146,6 +146,20 @@ export class PaymentContext extends EventBus {
 
       // [关键] 成功返回前，存档！
       this._lastContextState = ctx.state;
+
+      // 自动轮询编排
+      // 如果 Strategy 返回 pending (如获取到了二维码)，且参数指定了 autoPoll，则自动托管
+
+      if (result.status === 'pending' && ctx.params.autoPoll) {
+        // 使用 nextTick 或 确保异步不阻塞当前返回
+        setTimeout(() => {
+          // 确保有 OrderId，通常 Strategy 会透传回来，如果没有则降级使用 params 中的
+          const orderId = result.transactionId || ctx.params.orderId;
+          console.log(`[PaymentContext] Auto start polling for order: ${orderId}`);
+          this.startPolling(strategyName, orderId);
+        }, 3000);
+      }
+
       return result;
     } catch (error: any) {
       // 归一化错误

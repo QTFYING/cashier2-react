@@ -1,7 +1,6 @@
 import { WechatAdapter } from '../adapters';
 import { InvokerFactory } from '../core/invoker-factory';
 import { PaymentChannelEnum, type HttpClient, type PayParams, type PayResult, type SDKConfig } from '../types';
-import { Poller } from '../utils/poller';
 import { BaseStrategy } from './base-strategy';
 
 // 定义微信策略需要的配置类型
@@ -87,34 +86,8 @@ export class WechatStrategy extends BaseStrategy<WechatConfig> {
    * 真实逻辑: 调用后端查单API
    * Mock逻辑：在首次调用后的 10 秒内返回 pending，之后返回 success
    */
-  async payWithPolling(params: PayParams, http: HttpClient, invokerType?: SDKConfig['invokerType']): Promise<PayResult> {
-    // 1. 先获取二维码链接
-    const prepareResult = await this.pay(params, http, invokerType);
-
-    // 如果不是 pending (比如直接失败了)，直接返回
-    if (prepareResult.status !== 'pending') {
-      return prepareResult;
-    }
-
-    console.log('二维码已获取，开始轮询查单...');
-
-    // 2. 初始化轮询器 (指数退避，最长查 2 分钟)
-    const poller = new Poller({ strategy: 'exponential', timeout: 120 * 1000 });
-
-    try {
-      // 3. 启动轮询
-      const finalResult = await poller.start(
-        // Task: 每次查单动作
-        () => this.getPaySt(params.orderId),
-
-        // Validator: 什么时候停止？(成功或失败时停止，pending 继续查)
-        (res) => res.status === 'success' || res.status === 'fail',
-      );
-
-      return finalResult;
-    } catch (err: any) {
-      // 超时或被手动停止
-      return { status: 'fail', message: err.message || 'Polling timeout or cancelled' };
-    }
-  }
+  // async payWithPolling(params: PayParams, http: HttpClient, invokerType?: SDKConfig['invokerType']): Promise<PayResult> {
+  //   // 逻辑已移除，由 PaymentContext 统一编排
+  //   return { status: 'fail', message: 'Use context.execute with autoPoll:true instead' };
+  // }
 }

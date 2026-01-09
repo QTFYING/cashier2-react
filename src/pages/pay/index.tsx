@@ -1,6 +1,6 @@
 import { AlipayCircleOutlined, WechatOutlined } from '@ant-design/icons';
 import { Alert, Button, Card, Divider, Form, message, Modal, QRCode, Radio, Result, Skeleton, Statistic, Tag, Typography } from 'antd';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import type { CreateOrderParams } from '../../api/payment';
 import { PayError } from '../../cashier2';
 import { useCashier } from '../../hooks';
@@ -50,7 +50,7 @@ const Payment: React.FC = () => {
         alipay: { extra: { subject: '测试商品', mode: 'pc' } },
       };
 
-      const payload = { ...base, orderId, ...(extraMap[channel] || {}) };
+      const payload = { ...base, orderId, ...(extraMap[channel] || {}), autoPoll: true };
       await pay(values.channel, payload);
 
       // 发起新支付时，重置过期标记
@@ -94,18 +94,6 @@ const Payment: React.FC = () => {
     const values = form.getFieldsValue() as CreateOrderParams;
     await onFinish(values);
   };
-
-  // 轮询控制
-  useEffect(() => {
-    if (channel === 'wechat' && qrValue && (status === 'pending' || status === 'processing')) {
-      cashier.startPolling('wechat', orderId);
-    } else if (status === 'success' || status === 'fail') {
-      cashier.stopPolling();
-    }
-  }, [cashier, channel, qrValue, status, orderId]);
-
-  // 组件卸载清理
-  useEffect(() => () => cashier.stopPolling(), [cashier]);
 
   // --- 渲染逻辑 ---
 

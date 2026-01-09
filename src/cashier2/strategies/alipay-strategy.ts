@@ -80,11 +80,5 @@ export class AlipayStrategy extends BaseStrategy<any> {
     }
   }
 
-  /**
-   * 实现带轮询能力的支付
-   * 真实逻辑: 调用后端查单API
-   * Mock逻辑：在首次调用后的 10 秒内返回 pending，之后返回 success
-   */
-
-  async payWithPolling() {}
+  // async payWithPolling() {}
 }
