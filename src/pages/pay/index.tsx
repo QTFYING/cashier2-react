@@ -116,7 +116,7 @@ const Payment: React.FC = () => {
   // 计算按钮文案和状态
   const getButtonProps = () => {
     if (status === 'success') return { text: '下一单', disabled: false };
-    if (isCreated) return { text: '重新支付', disabled: loading };
+    if (status === 'fail') return { text: '重新支付', disabled: loading };
     return { text: '去支付', disabled: loading };
   };
 
@@ -134,8 +134,8 @@ const Payment: React.FC = () => {
         <>
           <Typography.Title level={4}>微信扫码支付</Typography.Title>
           <div className="my-4 relative flex justify-center items-center w-216px h-216px">
-            {/* 骨架屏与二维码互斥显示 */}
-            {loading || !qrValue ? (
+            {/* 骨架屏与二维码互斥显示: 只要有码就显示码，否则显示骨架屏 */}
+            {!qrValue ? (
               <Skeleton.Avatar shape="square" active size={216} className="absolute inset-0" />
             ) : (
               <QRCode value={qrValue} size={216} status={isQrExpired ? 'expired' : 'active'} onRefresh={onRefreshQr} />
@@ -178,12 +178,6 @@ const Payment: React.FC = () => {
         {/* 左侧卡片 */}
         <Card className="shadow-sm flex flex-col justify-center">
           <div className="relative min-h-[340px]">
-            {loading && (
-              <div className="absolute inset-0 z-10 bg-white/60 backdrop-blur-[1px] pt-4 rounded">
-                <Skeleton active paragraph={{ rows: 6 }} title={false} />
-              </div>
-            )}
-
             <Form form={form} onFinish={onFinish} initialValues={{ channel: 'alipay' }} layout="vertical">
               <Form.Item name="orderId" label="订单号">
                 <span className="text-gray-400 text-xs">{orderId || '订单号创建中～'}</span>

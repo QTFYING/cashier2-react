@@ -1,8 +1,8 @@
-import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { PayParams, PayResult } from '../cashier2';
 import { CashierContext } from './cashier-context';
 import { PaymentStatusEnum } from './enums';
-import type { CashierState, UseCashierOptions } from './types';
+import type { UseCashierOptions } from './types';
 
 export function useCashier(options: UseCashierOptions = {}) {
   const context = useContext(CashierContext);
@@ -14,51 +14,49 @@ export function useCashier(options: UseCashierOptions = {}) {
 
   const { cashier } = context;
 
-  // --- 状态管理 ---
-  // 使用 Store 同步状态
-  const [state, setState] = useState<CashierState>(() => {
-    const s = cashier.store.getState();
-    return {
-      loading: s.loading,
-      status: s.status === 'idle' ? null : s.status,
-      result: s.result || null,
-      error: (s.error as any) || null,
-      action: s.result?.action || null,
-    };
-  });
-
   // Ref 保持引用，避免 useEffect 依赖地狱
   const optionsRef = useRef(options);
 
-  // --- 1. 订阅 Store 更新 + 事件监听 ---
-  // 场景：轮询查单成功、用户扫码成功、超时自动关闭
+  // --- 1. 订阅 Store 更新 Using useSyncExternalStore ---
+  const subscribe = useCallback(
+    (callback: () => void) => {
+      // 适配: Store expect (state) => void, but generic subscriber expects () => void
+      // We ignore the state arg because we just need to trigger a re-render
+      return cashier.store.subscribe(() => callback());
+    },
+    [cashier],
+  );
+
+  const getSnapshot = useCallback(() => {
+    return cashier.store.getState();
+  }, [cashier]);
+
+  // 使用 useSyncExternalStore 代替手动维护的 setState
+  // 注意：需要 React 18+
+  const storeState = useSyncExternalStore(subscribe, getSnapshot);
+
+  // Computed/Derived State (在 render 中计算，保证总是由 snapshot 驱动)
+  const isProcess = storeState.status === 'processing' || storeState.status === 'pending';
+
+  const state = {
+    // 统一 loading 状态：网络请求中 或 业务处理中
+    loading: storeState.loading || isProcess,
+    status: storeState.status === 'idle' ? null : storeState.status,
+    result: storeState.result || null,
+    error: (storeState.error as any) || null,
+    action: storeState.result?.action || null,
+  };
+
+  // 事件监听仅需保持引用，不需要触发 render，所以可以简单处理或分离
+  // 由于原逻辑中 options 回调是在 useEffect 中绑定的，我们可以保持这一部分，
+  // 或者将其移到独立的 useEffect 中，仅负责 EventBus -> callback 的桥接
   useEffect(() => {
-    if (!cashier) return;
     optionsRef.current = options;
+    if (!cashier) return;
 
-    // A. 订阅 Store (Subject Pattern)
-    // 只要 Store 变了，这里就会收到通知，无论是因为轮询还是主动 execute
-    const unsubscribe = cashier.store.subscribe((s) => {
-      setState(() => {
-        return {
-          loading: s.loading,
-          status: s.status === 'idle' ? null : s.status,
-          result: s.result || null,
-          error: (s.error as any) || null,
-          action: s.result?.action || null,
-        };
-      });
-    });
-
-    // B. 事件监听 (仅用于触发 options 回调，不再负责 UI 更新)
-    const handleSuccess = (res: PayResult) => {
-      optionsRef.current?.onSuccess?.(res);
-    };
-
-    const handleFail = (err: any) => {
-      optionsRef.current?.onError?.(err);
-    };
-
+    // 事件转发 (EventBus -> User Options)
+    const handleSuccess = (res: PayResult) => optionsRef.current?.onSuccess?.(res);
+    const handleFail = (err: any) => optionsRef.current?.onError?.(err);
     const handleStatusChange = (payload: { status: string; result?: any }) => {
       optionsRef.current?.onStatusChange?.(payload.status, payload.result);
     };
@@ -68,7 +66,6 @@ export function useCashier(options: UseCashierOptions = {}) {
     cashier.on('statusChange', handleStatusChange);
 
     return () => {
-      unsubscribe();
       cashier.off('success', handleSuccess);
       cashier.off('fail', handleFail);
       cashier.off('statusChange', handleStatusChange);
@@ -97,10 +94,16 @@ export function useCashier(options: UseCashierOptions = {}) {
 
   // --- 5. 上下游场景：创建订单 ---
   const create = async (params: any) => {
-    // 建议hooks中的http请求全部读取context中的http实例
-    const { orderId } = await cashier.http.post('/payment/create', params);
-    setOrderId(orderId);
-    return orderId;
+    try {
+      // 复用 Store 的 loading 状态
+      cashier.store.setState({ loading: true });
+      // 建议hooks中的http请求全部读取context中的http实例
+      const { orderId } = await cashier.http.post('/payment/create', params);
+      setOrderId(orderId);
+      return orderId;
+    } finally {
+      cashier.store.setState({ loading: false });
+    }
   };
 
   return {
