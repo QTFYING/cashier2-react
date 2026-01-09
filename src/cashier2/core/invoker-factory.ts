@@ -1,18 +1,13 @@
-import { WebInvoker } from '../invokers';
 import { AlipayMiniInvoker } from '../invokers/alipay-mini-invoker';
-import type { PaymentInvoker } from '../invokers/types';
+import type { PaymentInvoker, PayPlatformType } from '../invokers/types';
 import { UniAppInvoker } from '../invokers/uni-invoker';
+import { WebInvoker } from '../invokers/web-invoker';
 import { WechatMiniInvoker } from '../invokers/wechat-mini-invoker';
 
 // 全局变量声明
 declare const uni: any;
 declare const wx: any;
 declare const my: any;
-
-export type PayPlatformType = 'wechat' | 'alipay' | 'unionpay' | 'other';
-
-// 为了保持智能提示，保留常用字符串，但允许任意 string
-export type InvokerType = 'uniapp' | 'web' | 'wechat-mini' | 'alipay-mini' | string;
 
 // 探测器函数：返回 true 表示当前环境匹配
 export type InvokerMatcher = () => boolean;

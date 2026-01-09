@@ -1,3 +1,4 @@
+import { PayPlatformType } from '../invokers/types';
 import { EventBridgePlugin } from '../plugins/event-bridge-plugin';
 import type { BaseStrategy } from '../strategies/base-strategy';
 import type { HttpClient, PaymentContextState, PaymentPlugin, PayParams, PayResult, SDKConfig } from '../types';
@@ -6,6 +7,7 @@ import { createDefaultFetcher } from '../utils/fetcher';
 import { ScriptLoader } from '../utils/script-loader';
 import { Store } from './cashier-store';
 import { EventBus } from './event-bus';
+import { InvokerFactory } from './invoker-factory';
 import { PayError } from './payment-error';
 import { PluginDriver } from './plugin-driver';
 import { PollingManager } from './polling-manager';
@@ -101,7 +103,7 @@ export class PaymentContext extends EventBus {
   /**
    * 核心执行器
    */
-  async execute(strategyName: string, params: PayParams): Promise<PayResult> {
+  async execute(strategyName: PayPlatformType, params: PayParams): Promise<PayResult> {
     const strategy = this.strategies.get(strategyName);
     if (!strategy) {
       throw new PayError(PayErrorCode.INVALID_CONFIG, `Strategy "${strategyName}" not registered.`);
@@ -128,8 +130,18 @@ export class PaymentContext extends EventBus {
       await this.driver.implant('onBeforeInvoke', ctx);
 
       // --- Stage 4: 执行 (Execution) ---
-      // 执行真实的支付逻辑 (Strategy.pay)
-      const result = await strategy.pay(ctx.params, this.http, this.invokerType);
+      // 4.1 准备数据 (Prepare)
+      const signedPayload = await strategy.prepare(ctx.params, this.http);
+      ctx.apiResponse = signedPayload; // 存一份到上下文，供插件使用
+
+      // 4.2 获取执行器 (IoC: 由 Context 决定使用哪个 Invoker)
+      const invoker = InvokerFactory.create(strategyName, this.invokerType);
+
+      // 4.3 唤起支付 (Invoke)
+      const rawResult = await invoker.invoke(signedPayload);
+
+      // 4.4 归一化结果 (Process)
+      const result = strategy.process(rawResult);
       ctx.result = result;
 
       // Stage 5: Settlement

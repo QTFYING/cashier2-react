@@ -1,6 +1,5 @@
 import { AlipayAdapter } from '../adapters';
-import { InvokerFactory } from '../core/invoker-factory';
-import type { HttpClient, PayParams, PayResult, SDKConfig } from '../types';
+import type { HttpClient, PayParams, PayResult } from '../types';
 import { BaseStrategy } from './base-strategy';
 
 type AlipayResponse =
@@ -40,44 +39,31 @@ export class AlipayStrategy extends BaseStrategy<any> {
   }
 
   /**
-   * 实现单次支付逻辑
-   * 真实逻辑: 调用后端统一下单API
-   * Mock逻辑：模拟支付成功，返回订单号
+   * 阶段1：准备支付
    */
-  async pay(params: PayParams, http: HttpClient, invokerType?: SDKConfig['invokerType']): Promise<PayResult> {
-    // 1. 校验 (Adapter 负责，Strategy 不关心具体字段)
+  async prepare(params: PayParams, http: HttpClient): Promise<AlipayResponse> {
+    // 1. 校验 & 转换
     this.adapter.validate(params);
+    const payload = this.adapter.transform(params);
 
-    try {
-      // 2. 转换 (Adapter 负责)
-      const payload = this.adapter.transform(params);
+    // 2. 后端签名 & 下单
+    // 如果是 APP/小程序，后端返回 { orderStr: "..." }
+    // 如果是 Wap/PC，后端返回 { form: "<form>..." } 或 { url: "..." }
+    const signedData = await http.post<AlipayResponse>('/payment/alipay', payload);
 
-      // 3. 后端签名 & 下单
-      // 如果是 APP/小程序，后端返回 { orderStr: "..." }
-      // 如果是 Wap/PC，后端返回 { form: "<form>..." } 或 { url: "..." }
+    // mock数据重置
+    this.startTime = Date.now();
 
-      // 这里一定拿到的是data，不是这种格式的让客户端处理好返回（因为uni.request、fetch等返回的数据格式均不一样）
-      const signedData = await http.post<AlipayResponse>('/payment/alipay', payload);
+    return signedData;
+  }
 
-      // mock数据，每次执行的时候，重制一下开始时间
-      this.startTime = Date.now();
-
-      // 场景 B: 小程序 / APP (返回的是 SON或字符串类型的 orderStr)
-      // 支付宝在 UniApp 里，orderInfo 就是这个字符串
-      const orderStr = (signedData as { orderStr?: string }).orderStr || (typeof signedData === 'string' ? signedData : null);
-
-      // 4. 执行 (Invoker 负责)
-      const invoker = InvokerFactory.create(this.name, invokerType);
-
-      const invokeRes = await invoker.invoke(orderStr);
-
-      return this.adapter.normalize(invokeRes);
-    } catch (error: any) {
-      return {
-        status: 'fail',
-        message: error.message || 'Alipay Invoke Failed',
-      };
-    }
+  /**
+   * 阶段3：处理结果
+   */
+  process(rawResult: any): PayResult {
+    // 支付宝在 UniApp 里，orderInfo 就是这个字符串
+    // 这里需要处理一下 invoke 返回的差异，或者交给 Adapter
+    return this.adapter.normalize(rawResult);
   }
 
   // async payWithPolling() {}
