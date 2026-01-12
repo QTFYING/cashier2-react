@@ -64,8 +64,18 @@ async function main() {
     },
   };
 
+  // 插件 D: 模拟出错插件 (测试容错性)
+  const BadPlugin: PaymentPlugin = {
+    name: 'bad-plugin',
+    critical: false, // 声明为非关键
+    onBeforePay() {
+      console.log('>>> [Bad Plugin] 我要抛错了！');
+      throw new Error('Oops, I crashed!');
+    },
+  };
+
   // 注册所有插件
-  cashier.use(LoadingPlugin).use(AuthPlugin).use(LoggerPlugin);
+  cashier.use(LoadingPlugin).use(AuthPlugin).use(LoggerPlugin).use(BadPlugin);
 
   // --- 4. 监听事件 (可选，用于 UI 组件通信) ---
   cashier.on('beforePay', (params) => {

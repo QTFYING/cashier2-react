@@ -35,6 +35,19 @@ export interface PaymentPlugin {
   name: string; // 插件唯一标识
   enforce?: 'pre' | 'post'; // 强制执行顺序 (可选)
 
+  /**
+   * 是否为关键插件 (默认 true)
+   * - true: 插件抛错会导致整个支付流程终止 (如 Auth, Risk)
+   * - false: 插件抛错会被忽略，只打印警告 (如 Logger, Analytics)
+   */
+  critical?: boolean;
+
+  /**
+   * 插件执行超时时间 (毫秒)，默认 10000ms
+   * 防止某个非关键插件卡死主流程
+   */
+  timeout?: number;
+
   // --- Stage 1: 准备 (Validation & Guard) ---
   /**
    * 支付开始前触发

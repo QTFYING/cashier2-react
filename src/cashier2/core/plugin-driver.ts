@@ -14,21 +14,49 @@ export class PluginDriver {
       if (!fn) continue;
 
       const auditedCtx = this.createPluginProxy(ctx, plugin.name);
+      const isCritical = plugin.critical ?? true; // ⚠️ 默认是关键插件
+      const timeoutMs = plugin.timeout ?? 10000; // 默认 10秒超时
 
       try {
-        await (fn as Function).call(plugin, auditedCtx, ...args);
+        // 核心：使用 Promise 竞争机制实现超时控制 (Manual Race for Cleanup)
+        await this.withTimeout((fn as Function).call(plugin, auditedCtx, ...args), timeoutMs, `Plugin [${plugin.name}] timed out after ${timeoutMs}ms`);
 
+        // 检查是否被插件主动中断 (Abort Logic)
         if (ctx && ctx.aborted) {
           throw new PayError(PayErrorCode.PLUGIN_INTERRUPT, `Aborted by plugin: ${plugin.name}`);
         }
       } catch (err: any) {
-        if (err instanceof PayError) {
-          throw err;
+        // 场景 A: 自身是 Critical 插件 -> 抛错，中断全流程
+        if (isCritical) {
+          // 如果已经是 PayError，直接抛；否则包装一下
+          if (err instanceof PayError) throw err;
+          throw new PayError(PayErrorCode.PLUGIN_ERROR, `[Critical Plugin ${plugin.name}] ${String(hook)} failed: ${err.message}`, err);
         }
 
-        throw new PayError(PayErrorCode.PLUGIN_ERROR, `[Plugin ${plugin.name}] ${String(hook)} failed: ${err.message}`, err);
+        // 场景 B: 自身是 Non-Critical 插件 -> 吞掉错误，仅打印警告，流程继续！
+        console.warn(`[⚠️ Non-Critical Plugin ${plugin.name}] error ignored:`, err.message);
       }
     }
+  }
+
+  private withTimeout<T>(promise: Promise<T> | void, ms: number, msg: string): Promise<T> {
+    if (!promise || typeof (promise as any).then !== 'function') {
+      return Promise.resolve(promise as T);
+    }
+
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error(msg)), ms);
+      (promise as Promise<T>).then(
+        (res) => {
+          clearTimeout(timer);
+          resolve(res);
+        },
+        (err) => {
+          clearTimeout(timer);
+          reject(err);
+        },
+      );
+    });
   }
 
   /**
