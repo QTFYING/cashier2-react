@@ -1,8 +1,8 @@
 import { AlipayCircleOutlined, WechatOutlined } from '@ant-design/icons';
+import { PayError } from '@my-cashier/core';
 import { Alert, Button, Card, Divider, Form, message, Modal, QRCode, Radio, Result, Skeleton, Statistic, Tag, Typography } from 'antd';
 import React, { useMemo, useState } from 'react';
 import type { CreateOrderParams } from '../../api/payment';
-import { PayError } from '../../cashier2';
 import { useCashier } from '../../hooks';
 
 const STATUS_COLOR = {

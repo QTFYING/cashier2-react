@@ -1,4 +1,4 @@
-import type { PayError, PaymentAction, PaymentPlugin, PayParams, PayResult } from '../cashier2';
+import type { PayError, PaymentAction, PaymentPlugin, PayParams, PayResult } from '@my-cashier/core';
 import { PaymentStatusEnum } from './enums';
 
 // --- 入参配置 ---

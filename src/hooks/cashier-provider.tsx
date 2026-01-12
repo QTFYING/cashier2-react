@@ -1,7 +1,7 @@
 // src/hooks/react/CashierProvider.tsx
+import { AlipayStrategy, PaymentContext, WechatStrategy, type SDKConfig } from '@my-cashier/core';
+// import { MockStrategy } from '@my-cashier/types';
 import React, { useEffect, useMemo } from 'react';
-import { AlipayStrategy, PaymentContext, WechatStrategy, type SDKConfig } from '../cashier2';
-import { MockStrategy } from '../cashier2/strategies';
 import { CashierContext } from './cashier-context';
 import './invoker'; // 注入TikTok执行器
 import { AuthPlugin, LoadingPlugin, LoggerPlugin } from './plugin';
@@ -33,10 +33,8 @@ export const CashierProvider: React.FC<CashierProviderProps> = ({ config, client
 
   useEffect(() => {
     // 1. 注册默认策略
-    cashier
-      .register(new WechatStrategy({ appId: 'wx888888', mchId: '123456' }))
-      .register(new AlipayStrategy({ appId: '2021000000', privateKey: '...' }))
-      .register(new MockStrategy());
+    cashier.register(new WechatStrategy({ appId: 'wx888888', mchId: '123456' })).register(new AlipayStrategy({ appId: '2021000000', privateKey: '...' }));
+    // .register(new MockStrategy());
 
     // 2. 注册默认插件 (全局副作用，确保只注册一次, 这个一定不能放在 Hooks 内)
     // 在 Hook 中注册会导致每次组件挂载都重复添加插件（如重复的 Logger 或 Loading），造成性能浪费和潜在 Bug

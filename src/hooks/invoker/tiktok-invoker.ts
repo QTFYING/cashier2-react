@@ -1,4 +1,4 @@
-import { PayError, PayErrorCode, type PaymentInvoker } from '../../cashier2';
+import { PayError, PayErrorCode, type PaymentInvoker } from '@my-cashier/core';
 
 // 声明全局变量 tt (字节跳动小程序的全局对象)
 declare const tt: any;

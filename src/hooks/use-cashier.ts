@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import type { PayParams, PayResult } from '../cashier2';
+import type { PayParams, PayResult } from '@my-cashier/core';
 import { CashierContext } from './cashier-context';
 import { PaymentStatusEnum } from './enums';
 import type { UseCashierOptions } from './types';

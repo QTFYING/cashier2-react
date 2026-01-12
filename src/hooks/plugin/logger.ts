@@ -1,4 +1,4 @@
-import type { PaymentPlugin } from '../../cashier2';
+import type { PaymentPlugin } from '@my-cashier/core';
 
 export const LoggerPlugin: PaymentPlugin = {
   name: 'logger',

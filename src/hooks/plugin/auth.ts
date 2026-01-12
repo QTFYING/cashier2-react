@@ -1,4 +1,4 @@
-import type { PaymentPlugin } from '../../cashier2';
+import type { PaymentPlugin } from '@my-cashier/core';
 
 export const AuthPlugin: PaymentPlugin = {
   name: 'auth-check',
