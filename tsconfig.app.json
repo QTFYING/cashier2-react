@@ -29,5 +29,5 @@
       "@my-cashier/utils": ["./libs/cashier/packages/utils/src/index.ts"]
     }
   },
-  "include": ["src", "mock", "libs/cashier/packages/*/src"]
+  "include": ["src", "mock", "libs/cashier/packages/*/src", "libs/cashier/packages/vue/use-cashier", "libs/cashier/packages/vue/index.ts"]
 }
