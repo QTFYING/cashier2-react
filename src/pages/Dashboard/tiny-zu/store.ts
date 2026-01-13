@@ -29,7 +29,7 @@ export const useZuStore = createWithMiddleware<MyState>(
 
 // 订阅某个 selector 的变化
 (useMyStore as any).subscribeWithSelector(
-  (s) => ({ count: s.count + 1, text: s.text }),
+  (s: any) => ({ count: s.count + 1, text: s.text }),
   () => {
     console.log('count 或 text 变化了');
   },

@@ -19,6 +19,7 @@ export default defineConfig({
       '@my-cashier/core': path.resolve(__dirname, 'libs/cashier/packages/core/src/index.ts'),
       '@my-cashier/types': path.resolve(__dirname, 'libs/cashier/packages/types/src/index.ts'),
       '@my-cashier/utils': path.resolve(__dirname, 'libs/cashier/packages/utils/src/index.ts'),
+      '@my-cashier/react': path.resolve(__dirname, 'libs/cashier/packages/react/src/index.ts'),
     },
   },
 });

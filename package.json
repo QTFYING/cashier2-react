@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@my-cashier/core": "^0.0.1",
+    "@my-cashier/react": "^0.0.1",
     "@my-cashier/types": "^0.0.1",
     "ahooks": "^3.9.6",
     "antd": "^6.1.1",

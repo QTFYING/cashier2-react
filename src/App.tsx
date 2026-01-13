@@ -1,7 +1,8 @@
+import { AlipayStrategy, PaymentContext, WechatStrategy } from '@my-cashier/core';
+import { CashierProvider } from '@my-cashier/react';
 import React from 'react';
 import { RouterProvider } from 'react-router-dom';
 import service from './api/request';
-import { CashierProvider } from './hooks/cashier-provider';
 import router from './router';
 
 const App: React.FC = () => {
@@ -32,8 +33,18 @@ const App: React.FC = () => {
     },
   };
 
+  const client = React.useMemo(() => {
+    const cashier = new PaymentContext({ debug: true, http: httpInstance, invokerType: 'web' });
+
+    // Register Strategies
+    cashier.register(new WechatStrategy({ appId: 'wx888888', mchId: '123456' }));
+    cashier.register(new AlipayStrategy({ appId: '2021000000', privateKey: '...' }));
+
+    return cashier;
+  }, []);
+
   return (
-    <CashierProvider config={{ debug: true, http: httpInstance, invokerType: 'web' }}>
+    <CashierProvider client={client} config={{ debug: true, http: httpInstance, invokerType: 'web' }}>
       <RouterProvider router={router} />
     </CashierProvider>
   );

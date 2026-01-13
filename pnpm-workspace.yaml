@@ -1,3 +1,4 @@
 overrides:
-  '@my-cashier/core': link:../../github/cashier/packages/core
-  '@my-cashier/types': link:../../github/cashier/packages/types
+  '@my-cashier/core': link:libs/cashier/packages/core
+  '@my-cashier/types': link:libs/cashier/packages/types
+  '@my-cashier/react': link:libs/cashier/packages/react

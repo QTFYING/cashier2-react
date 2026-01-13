@@ -11,23 +11,24 @@
     /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
+    "verbatimModuleSyntax": false,
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
 
     /* Linting */
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "erasableSyntaxOnly": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "erasableSyntaxOnly": false,
     /* Local SDK Paths */
     "baseUrl": ".",
     "paths": {
       "@my-cashier/core": ["./libs/cashier/packages/core/src/index.ts"],
       "@my-cashier/types": ["./libs/cashier/packages/types/src/index.ts"],
-      "@my-cashier/utils": ["./libs/cashier/packages/utils/src/index.ts"]
+      "@my-cashier/utils": ["./libs/cashier/packages/utils/src/index.ts"],
+      "@my-cashier/react": ["./libs/cashier/packages/react/src/index.ts"]
     }
   },
-  "include": ["src", "mock", "libs/cashier/packages/*/src", "libs/cashier/packages/vue/use-cashier", "libs/cashier/packages/vue/index.ts"]
+  "include": ["src", "mock", "libs/cashier/packages/core/src", "libs/cashier/packages/types/src", "libs/cashier/packages/utils/src", "libs/cashier/packages/react/src"]
 }

@@ -1,8 +1,8 @@
 import { produce } from 'immer';
 import type { Middleware } from '../utils';
 
-// logger 中间件：在每次 setState 前后打印
-export function loggerMiddleware<S>(): Middleware<S> {
+// 1. 日志中间件: 在每次 setState 前后打印
+export function loggerMiddleware<S extends object>(): Middleware<S> {
   return (next) => (set, get, api) => {
     // 包装 set，使其在调用前后打印
     const wrappedSet: typeof set = (partial) => {
@@ -15,8 +15,8 @@ export function loggerMiddleware<S>(): Middleware<S> {
   };
 }
 
-// persist 中间件：把 state 写入 localStorage（简单示例）
-export function persistMiddleware<S>(key: string): Middleware<S> {
+// 2. 持久化中间件: 把 state 写入 localStorage（简单示例）
+export function persistMiddleware<S extends object>(key: string): Middleware<S> {
   return (next) => (set, get, api) => {
     // 在初始化时尝试从 localStorage 恢复
     try {
@@ -47,7 +47,7 @@ export function persistMiddleware<S>(key: string): Middleware<S> {
 }
 
 // immer 中间件：允许在 set 中传入 producer（draft => void）
-export function immerMiddleware<S>(): Middleware<S> {
+export function immerMiddleware<S extends object>(): Middleware<S> {
   return (next) => (set, get, api) => {
     const wrappedSet: typeof set = (partial) => {
       if (typeof partial === 'function') {

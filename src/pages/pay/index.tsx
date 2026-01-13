@@ -1,9 +1,10 @@
 import { AlipayCircleOutlined, WechatOutlined } from '@ant-design/icons';
 import { PayError } from '@my-cashier/core';
+import { useCashier } from '@my-cashier/react';
 import { Alert, Button, Card, Divider, Form, message, Modal, QRCode, Radio, Result, Skeleton, Statistic, Tag, Typography } from 'antd';
 import React, { useMemo, useState } from 'react';
 import type { CreateOrderParams } from '../../api/payment';
-import { useCashier } from '../../hooks';
+import service from '../../api/request';
 
 const STATUS_COLOR = {
   success: 'green',
@@ -22,7 +23,20 @@ const Payment: React.FC = () => {
   // 用于控制二维码过期视觉状态
   const [isQrExpired, setIsQrExpired] = useState(false);
 
-  const { reset, pay, orderId, create, loading, status, result, statusText } = useCashier();
+  const { reset, pay, loading, status, result, statusText, cashier } = useCashier();
+  const [orderId, setOrderId] = useState<string>('');
+
+  const create = async (params: any) => {
+    try {
+      cashier.store.setState({ loading: true });
+      const res = await service.post('/payment/create', params);
+      const { orderId } = res.data;
+      setOrderId(orderId);
+      return orderId;
+    } finally {
+      cashier.store.setState({ loading: false });
+    }
+  };
 
   const isCreated = status !== null;
 
