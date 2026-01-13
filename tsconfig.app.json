@@ -21,8 +21,13 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    /* Local SDK Paths */
+    "baseUrl": ".",
+    "paths": {
+      "@my-cashier/core": ["./libs/cashier/packages/core/src/index.ts"],
+      "@my-cashier/types": ["./libs/cashier/packages/types/src/index.ts"],
+      "@my-cashier/utils": ["./libs/cashier/packages/utils/src/index.ts"]
+    }
   },
-  "include": ["src", "mock"]
+  "include": ["src", "mock", "libs/cashier/packages/*/src"]
 }

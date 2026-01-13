@@ -1,0 +1,4 @@
+[submodule "libs/cashier"]
+	path = libs/cashier
+	url = git@github.com:QTFYING/cashier.git
+	branch = dev
