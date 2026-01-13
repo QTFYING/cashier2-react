@@ -22,7 +22,7 @@ const Payment: React.FC = () => {
   // 用于控制二维码过期视觉状态
   const [isQrExpired, setIsQrExpired] = useState(false);
 
-  const { reset, pay, orderId, create, loading, status, result, statusText, cashier } = useCashier();
+  const { reset, pay, orderId, create, loading, status, result, statusText } = useCashier();
 
   const isCreated = status !== null;
 

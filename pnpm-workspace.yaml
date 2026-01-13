@@ -1,0 +1,3 @@
+overrides:
+  '@my-cashier/core': link:../../github/cashier/packages/core
+  '@my-cashier/types': link:../../github/cashier/packages/types
