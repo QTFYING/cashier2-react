@@ -1,6 +1,5 @@
 import { Space, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import React from 'react';
 
 interface DataType {
   key: string;
@@ -87,7 +86,7 @@ const data: DataType[] = [
   },
 ];
 
-const TransactionHistory: React.FC = () => {
+const TransactionHistory = () => {
   return (
     <div>
       <h2 className="mb-6">Transaction History</h2>

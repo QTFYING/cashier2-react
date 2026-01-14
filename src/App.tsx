@@ -1,13 +1,12 @@
 import { AlipayStrategy, PaymentContext, WechatStrategy } from '@my-cashier/core';
 import { CashierProvider } from '@my-cashier/react';
-import React from 'react';
 import { RouterProvider } from 'react-router-dom';
 import service from './api/request';
 import { StripeStrategy } from './payment/channels/stripe';
 import { AuthPlugin, BadPlugin, LoadingPlugin, LoggerPlugin } from './payment/plugins';
 import router from './router';
 
-const App: React.FC = () => {
+const App = () => {
   /**
    * 核心适配器：将客户端的 service 包装成 SDK 预期的“纯净版” HttpClient
    */

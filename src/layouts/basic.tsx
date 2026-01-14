@@ -1,11 +1,11 @@
 import { CreditCardOutlined, DashboardOutlined, HistoryOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import { Button, Layout, Menu, theme } from 'antd';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 const { Header, Sider, Content } = Layout;
 
-const BasicLayout: React.FC = () => {
+const BasicLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
 
   const { colorBgContainer, borderRadiusLG } = theme.useToken().token;
