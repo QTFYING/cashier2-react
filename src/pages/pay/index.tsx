@@ -5,16 +5,7 @@ import { Alert, Button, Card, Divider, Form, message, Modal, QRCode, Radio, Resu
 import React, { useMemo, useState } from 'react';
 import type { CreateOrderParams } from '../../api/payment';
 import service from '../../api/request';
-
-const STATUS_COLOR = {
-  success: 'green',
-  fail: 'red',
-  processing: 'blue',
-  default: 'default',
-  pending: 'default',
-  refunded: 'warning',
-  cancel: 'orange',
-};
+import { STATUS_COLOR, STATUS_TEXT } from './enums';
 
 const Payment: React.FC = () => {
   const [form] = Form.useForm();
@@ -23,7 +14,7 @@ const Payment: React.FC = () => {
   // 用于控制二维码过期视觉状态
   const [isQrExpired, setIsQrExpired] = useState(false);
 
-  const { reset, pay, loading, status, result, statusText, cashier } = useCashier();
+  const { reset, pay, loading, status, result, cashier } = useCashier();
   const [orderId, setOrderId] = useState<string>('');
 
   const create = async (params: any) => {
@@ -96,15 +87,11 @@ const Payment: React.FC = () => {
 
   const handleReset = () => {
     setIsQrExpired(false);
-    form.resetFields(['channel']); // 可选：是否重置渠道
-    // 注意：这里可能需要调用 cashier.reset() 如果你的 hook 暴露了重置状态的方法
-    // 假设 hook 没有暴露 reset，通过组件卸载/重挂载或状态清理来模拟
+    form.resetFields(['channel']);
     reset();
-    // window.location.reload(); // 最简单的清理，实际项目中应调用 store.reset()
   };
 
   const onRefreshQr = async () => {
-    // 刷新二维码本质是使用原参数重新请求一次支付接口
     const values = form.getFieldsValue() as CreateOrderParams;
     await onFinish(values);
   };
@@ -198,7 +185,7 @@ const Payment: React.FC = () => {
                 <Form.Item label="支付状态">
                   <div className="min-h-[60px]">
                     <div className="flex items-center gap-2 mb-2">
-                      <Tag color={STATUS_COLOR[status!] || 'default'}>{statusText || '等待中'}</Tag>
+                      <Tag color={STATUS_COLOR[status!] || 'default'}>{STATUS_TEXT[status!] || '等待中'}</Tag>
                     </div>
                     {status === 'pending' && <Alert type="info" description="请按指引完成支付" showIcon />}
                     {status === 'success' && <Alert type="success" description="支付已完成" showIcon />}
