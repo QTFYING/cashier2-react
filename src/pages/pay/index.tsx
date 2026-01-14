@@ -1,6 +1,6 @@
 import { useCashier } from '@my-cashier/react';
 import { Divider, Form, Typography } from 'antd';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import type { CreateOrderParams } from '../../api/payment';
 import service from '../../api/request';
 import { onPayError } from '../../payment/utils';
@@ -8,14 +8,14 @@ import { DebugPanel } from './debug-panel';
 import { PaymentForm } from './payment-form';
 import { PaymentResult } from './payment-result';
 
-const Payment: React.FC = () => {
+const Payment = () => {
   const [form] = Form.useForm();
   const channel = Form.useWatch('channel', form);
 
   // 用于控制二维码过期视觉状态
   const [isQrExpired, setIsQrExpired] = useState(false);
 
-  const { reset, pay, loading, status, result, cashier } = useCashier();
+  const { reset, pay, loading, status, result, cashier, inferErrorType } = useCashier();
   const [orderId, setOrderId] = useState<string>('');
 
   const create = async (params: any) => {
@@ -54,7 +54,7 @@ const Payment: React.FC = () => {
       // 发起新支付时，重置过期标记
       setIsQrExpired(false);
     } catch (err) {
-      onPayError(err);
+      onPayError(err, inferErrorType);
     }
   };
 
