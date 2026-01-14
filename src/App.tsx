@@ -3,6 +3,8 @@ import { CashierProvider } from '@my-cashier/react';
 import React from 'react';
 import { RouterProvider } from 'react-router-dom';
 import service from './api/request';
+import { StripeStrategy } from './payment/channels/stripe';
+import { AuthPlugin, BadPlugin, LoadingPlugin, LoggerPlugin } from './payment/plugins';
 import router from './router';
 
 const App: React.FC = () => {
@@ -33,18 +35,26 @@ const App: React.FC = () => {
     },
   };
 
-  const client = React.useMemo(() => {
-    const cashier = new PaymentContext({ debug: true, http: httpInstance, invokerType: 'web' });
+  /**
+   * 注入执行器
+   * 如果使用自己注入的启动器，则在初始化时，invokerType写成自定义的name即可
+   */
 
-    // Register Strategies
-    cashier.register(new WechatStrategy({ appId: 'wx888888', mchId: '123456' }));
-    cashier.register(new AlipayStrategy({ appId: '2021000000', privateKey: '...' }));
+  // InvokerFactory.register('stripe', StripeInvoker, () => true, 99);
 
-    return cashier;
-  }, []);
+  const cashier = new PaymentContext({ debug: true, http: httpInstance, invokerType: 'web' });
+
+  // 注册支付方式
+  cashier
+    .register(new WechatStrategy({ appId: 'wx888888', mchId: '123456' }))
+    .register(new AlipayStrategy({ appId: '2021000000', privateKey: '...' }))
+    .register(new StripeStrategy({ appId: '2021000000', privateKey: '...' })); // 自定义支付方式，并采用
+
+  // 注册插件
+  cashier.use(LoadingPlugin).use(AuthPlugin).use(LoggerPlugin).use(BadPlugin);
 
   return (
-    <CashierProvider client={client} config={{ debug: true, http: httpInstance, invokerType: 'web' }}>
+    <CashierProvider client={cashier}>
       <RouterProvider router={router} />
     </CashierProvider>
   );
