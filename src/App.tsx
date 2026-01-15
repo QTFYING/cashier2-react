@@ -1,4 +1,4 @@
-import { AlipayStrategy, PaymentContext, WechatStrategy } from '@my-cashier/core';
+import { AlipayStrategy, PaymentContext, WebInvoker, WechatStrategy } from '@my-cashier/core';
 import { CashierProvider } from '@my-cashier/react';
 import { RouterProvider } from 'react-router-dom';
 import service from './api/request';
@@ -51,6 +51,9 @@ const App = () => {
 
   // 注册插件
   cashier.use(LoadingPlugin).use(AuthPlugin).use(LoggerPlugin).use(BadPlugin);
+
+  // 注册Invoker
+  cashier.injectInvoker('web', WebInvoker);
 
   return (
     <CashierProvider client={cashier}>
